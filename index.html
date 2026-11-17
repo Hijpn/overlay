@@ -7,6 +7,15 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap');
 
+        :root {
+            --top-bg: rgba(6, 21, 45, 0.55);
+            --bottom-bg: rgba(7, 25, 54, 0.50);
+            --top-border-color: rgba(56, 189, 248, 0.8);
+            --bottom-border-color: rgba(249, 165, 62, 0.85);
+            --sub-border-color: rgba(56, 189, 248, 0.35);
+            --ticker-speed: 28s;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -31,7 +40,9 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            width: 400px;
+            width: 430px;
+            max-height: 82vh;
+            overflow-y: auto;
             background: rgba(13, 27, 42, 0.98);
             border: 1px solid #3b82f6;
             border-radius: 12px;
@@ -68,12 +79,22 @@
             color: #F9A53E;
         }
 
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
         .form-group {
             margin-bottom: 11px;
         }
 
         .form-group label {
-            display: block;
+            display: flex;
+            justify-content: space-between;
             font-size: 11px;
             text-transform: uppercase;
             color: #94a3b8;
@@ -81,7 +102,14 @@
             font-weight: 600;
         }
 
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group label span {
+            color: #F9A53E;
+            font-weight: 700;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 8px 10px;
             border-radius: 6px;
@@ -92,7 +120,16 @@
             outline: none;
         }
 
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+        .form-group input[type="range"] {
+            width: 100%;
+            accent-color: #F9A53E;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             border-color: #F9A53E;
         }
 
@@ -134,7 +171,7 @@
             min-height: 15px;
         }
 
-        /* ================= OVERLAY LOWER THIRD (NO GLOW & TRANSPARENT) ================= */
+        /* ================= OVERLAY LOWER THIRD ================= */
         .overlay-wrapper {
             position: fixed;
             bottom: 28px;
@@ -154,13 +191,14 @@
             height: 62px;
             padding: 0 28px;
             border-radius: 12px;
-            background: rgba(6, 21, 45, 0.55);
+            background: var(--top-bg);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            border-top: 2px solid rgba(56, 189, 248, 0.8);
-            border-bottom: 2px solid rgba(249, 165, 62, 0.85);
+            border-top: 2px solid var(--top-border-color);
+            border-bottom: 2px solid var(--bottom-border-color);
             position: relative;
             overflow: hidden;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .weather-section {
@@ -168,7 +206,7 @@
             align-items: center;
             gap: 16px;
             color: #ffffff;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
         }
 
         .weather-icon {
@@ -191,10 +229,39 @@
             background: rgba(255, 255, 255, 0.35);
         }
 
-        .weather-desc {
+        /* ================= FLIPPING WEATHER METRICS ================= */
+        .flip-container {
+            perspective: 600px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            min-width: 230px;
+        }
+
+        .weather-flip-text {
             font-size: 20px;
-            font-weight: 500;
+            font-weight: 600;
             color: #f1f5f9;
+            display: inline-block;
+            transform-origin: center center;
+            backface-visibility: hidden;
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+            white-space: nowrap;
+        }
+
+        .weather-flip-text.flip-out {
+            transform: rotateX(90deg);
+            opacity: 0;
+        }
+
+        .weather-flip-text.flip-in {
+            transform: rotateX(0deg);
+            opacity: 1;
+        }
+
+        .metric-highlight {
+            color: #F9A53E;
+            font-weight: 700;
         }
 
         .time-section {
@@ -202,7 +269,7 @@
             align-items: center;
             gap: 14px;
             color: #ffffff;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
         }
 
         .clock-time {
@@ -216,13 +283,52 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            line-height: 1.2;
+            line-height: 1.25;
+        }
+
+        .live-status-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .timezone-label {
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             color: #f8fafc;
+            letter-spacing: 0.3px;
+        }
+
+        /* Live Indicator Icons */
+        .live-dot-red {
+            width: 9px;
+            height: 9px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulseDot 1.5s infinite ease-in-out;
+        }
+
+        .live-dot-orange {
+            width: 9px;
+            height: 9px;
+            background-color: #F9A53E;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulseDot 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+
+        .live-svg-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .date-label {
@@ -237,12 +343,13 @@
             height: 44px;
             padding: 0 24px;
             border-radius: 10px;
-            background: rgba(7, 25, 54, 0.50);
+            background: var(--bottom-bg);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            border: 1px solid var(--sub-border-color);
             gap: 18px;
             position: relative;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .location-box {
@@ -253,7 +360,7 @@
             color: #ffffff;
             font-size: 18px;
             font-weight: 600;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
         }
 
         .pin-icon {
@@ -263,7 +370,7 @@
             flex-shrink: 0;
         }
 
-        /* Etiqueta AVIATION NEWS sem glow e clicável */
+        /* AVIATION NEWS badge (hidden toggle button) */
         .news-badge {
             background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
             border: 1px solid rgba(96, 165, 250, 0.75);
@@ -305,7 +412,7 @@
             font-weight: 500;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
             padding-left: 100%;
-            animation: marquee 28s linear infinite;
+            animation: marquee var(--ticker-speed) linear infinite;
         }
 
         @keyframes marquee {
@@ -316,39 +423,85 @@
 </head>
 <body>
 
-    <!-- Control Panel (Hidden by default) -->
+    <!-- Control Panel (Hidden by default - click AVIATION NEWS to toggle) -->
     <div id="control-panel">
         <div class="panel-header">
             <h3>Sky Stations • Control Panel</h3>
             <button class="btn-secondary" style="flex:0; padding:4px 10px;" onclick="togglePanel()">Hide</button>
         </div>
 
-        <div class="form-group">
-            <label>Quick Airport Preset (Optional)</label>
-            <select id="airport-preset" onchange="selectPreset()">
-                <option value="custom">-- Custom City Below --</option>
-                <option value="komaki" selected>Nagoya Komaki (NKM)</option>
-                <option value="centrair">Chubu Centrair (NGO)</option>
-                <option value="kansai">Kansai International (KIX)</option>
-                <option value="itami">Osaka Itami (ITM)</option>
-                <option value="haneda">Tokyo Haneda (HND)</option>
-                <option value="narita">Tokyo Narita (NRT)</option>
-            </select>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Airport Preset</label>
+                <select id="airport-preset" onchange="selectPreset()">
+                    <option value="custom">-- Custom City --</option>
+                    <option value="komaki" selected>Nagoya Komaki (NKM)</option>
+                    <option value="centrair">Chubu Centrair (NGO)</option>
+                    <option value="kansai">Kansai Intl (KIX)</option>
+                    <option value="itami">Osaka Itami (ITM)</option>
+                    <option value="haneda">Tokyo Haneda (HND)</option>
+                    <option value="narita">Tokyo Narita (NRT)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Bar Theme / Transparency</label>
+                <select id="theme-select" onchange="applyTheme()">
+                    <option value="navy-trans" selected>Navy Translucent (55%)</option>
+                    <option value="ultra-clear">Ultra Clear Glass (25%)</option>
+                    <option value="navy-solid">Solid Broadcast Navy</option>
+                    <option value="stealth-dark">Stealth Dark (55%)</option>
+                    <option value="aviation-teal">Aviation Teal (55%)</option>
+                    <option value="amber-night">Amber Night (60%)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>City Search (English)</label>
+                <input type="text" id="input-city" value="Komaki" placeholder="Ex: Komaki, Tokoname...">
+            </div>
+
+            <div class="form-group">
+                <label>Location Label</label>
+                <input type="text" id="input-location-label" value="Nagoya Area (Komaki)">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Status / Time Text</label>
+                <input type="text" id="input-status-label" value="Japan Time" placeholder="Ex: LIVE, ON AIR, Japan Time...">
+            </div>
+
+            <div class="form-group">
+                <label>Live Status Icon</label>
+                <select id="live-icon-select" onchange="updateLiveIcon()">
+                    <option value="none" selected>None (Text Only)</option>
+                    <option value="dot-red">🔴 Red Pulsing Dot</option>
+                    <option value="dot-orange">🟠 Orange Beacon Dot</option>
+                    <option value="antenna">📡 Broadcast Signal</option>
+                    <option value="plane">✈️ Aircraft Icon</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>News Badge Text</label>
+                <input type="text" id="input-badge" value="AVIATION NEWS">
+            </div>
+
+            <div class="form-group">
+                <label>Weather Flip Interval <span id="flip-val">4s</span></label>
+                <input type="range" id="input-flip-speed" min="2" max="12" value="4" oninput="updateFlipSpeed()">
+            </div>
         </div>
 
         <div class="form-group">
-            <label>City Search (English)</label>
-            <input type="text" id="input-city" value="Komaki" placeholder="Ex: Komaki, Tokoname, Osaka...">
-        </div>
-
-        <div class="form-group">
-            <label>Location Label (Overlay)</label>
-            <input type="text" id="input-location-label" value="Nagoya Area (Komaki)" placeholder="Ex: Nagoya Area (Komaki)">
-        </div>
-
-        <div class="form-group">
-            <label>News Badge</label>
-            <input type="text" id="input-badge" value="AVIATION NEWS">
+            <label>Ticker Scroll Speed <span id="speed-val">28s</span></label>
+            <input type="range" id="input-speed" min="10" max="60" value="28" oninput="updateTickerSpeed()">
         </div>
 
         <div class="form-group">
@@ -370,14 +523,19 @@
                 <div class="weather-icon" id="weather-icon"></div>
                 <span class="temperature" id="display-temp">--°C</span>
                 <div class="divider-v"></div>
-                <span class="weather-desc" id="display-desc">Loading...</span>
+                <div class="flip-container">
+                    <span class="weather-flip-text flip-in" id="display-flip-weather">Loading...</span>
+                </div>
             </div>
 
             <div class="time-section">
                 <span class="clock-time" id="display-time">00:00</span>
                 <div class="divider-v"></div>
                 <div class="date-box">
-                    <span class="timezone-label">Japan Time</span>
+                    <div class="live-status-row">
+                        <span id="live-icon-container"></span>
+                        <span class="timezone-label" id="display-status-label">Japan Time</span>
+                    </div>
                     <span class="date-label" id="display-date">Nov 17, 2026</span>
                 </div>
             </div>
@@ -414,35 +572,128 @@
             narita:   { city: "Narita",   label: "Tokyo Narita (NRT)",     lat: 35.7720, lon: 140.3929 }
         };
 
+        const themes = {
+            "navy-trans": {
+                topBg: "rgba(6, 21, 45, 0.55)",
+                bottomBg: "rgba(7, 25, 54, 0.50)",
+                topBorder: "rgba(56, 189, 248, 0.8)",
+                bottomBorder: "rgba(249, 165, 62, 0.85)",
+                subBorder: "rgba(56, 189, 248, 0.35)"
+            },
+            "ultra-clear": {
+                topBg: "rgba(6, 21, 45, 0.25)",
+                bottomBg: "rgba(7, 25, 54, 0.22)",
+                topBorder: "rgba(255, 255, 255, 0.55)",
+                bottomBorder: "rgba(249, 165, 62, 0.75)",
+                subBorder: "rgba(255, 255, 255, 0.25)"
+            },
+            "navy-solid": {
+                topBg: "linear-gradient(90deg, #06152d 0%, #0d2b59 50%, #06152d 100%)",
+                bottomBg: "linear-gradient(90deg, #071936 0%, #0b244c 50%, #071936 100%)",
+                topBorder: "#38bdf8",
+                bottomBorder: "#F9A53E",
+                subBorder: "rgba(56, 189, 248, 0.45)"
+            },
+            "stealth-dark": {
+                topBg: "rgba(15, 23, 42, 0.58)",
+                bottomBg: "rgba(15, 23, 42, 0.52)",
+                topBorder: "rgba(148, 163, 184, 0.65)",
+                bottomBorder: "rgba(249, 165, 62, 0.85)",
+                subBorder: "rgba(148, 163, 184, 0.3)"
+            },
+            "aviation-teal": {
+                topBg: "rgba(8, 47, 73, 0.55)",
+                bottomBg: "rgba(12, 74, 110, 0.48)",
+                topBorder: "rgba(34, 211, 238, 0.8)",
+                bottomBorder: "rgba(250, 204, 21, 0.8)",
+                subBorder: "rgba(34, 211, 238, 0.35)"
+            },
+            "amber-night": {
+                topBg: "rgba(23, 18, 36, 0.60)",
+                bottomBg: "rgba(28, 22, 43, 0.52)",
+                topBorder: "rgba(249, 165, 62, 0.85)",
+                bottomBorder: "rgba(56, 189, 248, 0.75)",
+                subBorder: "rgba(249, 165, 62, 0.35)"
+            }
+        };
+
+        const liveIcons = {
+            "none": "",
+            "dot-red": `<span class="live-dot-red"></span>`,
+            "dot-orange": `<span class="live-dot-orange"></span>`,
+            "antenna": `<span class="live-svg-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#F9A53E" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="2" fill="#F9A53E"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg></span>`,
+            "plane": `<span class="live-svg-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="#38bdf8"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></span>`
+        };
+
         let activeCoords = { lat: 35.2911, lon: 136.9122 };
         let currentCity = "Komaki";
 
-        const icons = {
+        // Weather items array for flipping display
+        let weatherItems = ["Loading..."];
+        let currentFlipIndex = 0;
+        let flipTimer = null;
+        let flipIntervalMs = 4000;
+
+        const weatherIcons = {
             clear: `<svg viewBox="0 0 64 64" width="42" height="42"><circle cx="32" cy="32" r="14" fill="#FDB813"/><g stroke="#FDB813" stroke-width="4" stroke-linecap="round"><line x1="32" y1="6" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="58"/><line x1="6" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="58" y2="32"/><line x1="13.6" y1="13.6" x2="17.8" y2="17.8"/><line x1="46.2" y1="46.2" x2="50.4" y2="50.4"/><line x1="13.6" y1="50.4" x2="17.8" y2="46.2"/><line x1="46.2" y1="17.8" x2="50.4" y2="13.6"/></g></svg>`,
             partlyCloudy: `<svg viewBox="0 0 64 64" width="42" height="42"><circle cx="24" cy="24" r="11" fill="#FDB813"/><g stroke="#FDB813" stroke-width="3" stroke-linecap="round"><line x1="24" y1="6" x2="24" y2="10"/><line x1="6" y1="24" x2="10" y2="24"/><line x1="11" y1="11" x2="14" y2="14"/><line x1="37" y1="11" x2="34" y2="14"/><line x1="11" y1="37" x2="14" y2="34"/></g><path d="M46 46H22a10 10 0 0 1-1.5-19.9A13 13 0 0 1 45.8 29 8.5 8.5 0 0 1 46 46z" fill="#ffffff"/></svg>`,
             cloudy: `<svg viewBox="0 0 64 64" width="42" height="42"><path d="M48 46H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 27 9.5 9.5 0 0 1 48 46z" fill="#e2e8f0"/></svg>`,
             rain: `<svg viewBox="0 0 64 64" width="42" height="42"><path d="M48 40H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 21 9.5 9.5 0 0 1 48 40z" fill="#cbd5e1"/><g stroke="#38bdf8" stroke-width="3" stroke-linecap="round"><line x1="22" y1="46" x2="19" y2="54"/><line x1="32" y1="46" x2="29" y2="54"/><line x1="42" y1="46" x2="39" y2="54"/></g></svg>`
         };
 
-        document.getElementById('weather-icon').innerHTML = icons.partlyCloudy;
+        document.getElementById('weather-icon').innerHTML = weatherIcons.partlyCloudy;
+
+        function startFlipCycle() {
+            if (flipTimer) clearInterval(flipTimer);
+            const el = document.getElementById('display-flip-weather');
+            el.innerHTML = weatherItems[0];
+            currentFlipIndex = 0;
+
+            if (weatherItems.length <= 1) return;
+
+            flipTimer = setInterval(() => {
+                el.classList.remove('flip-in');
+                el.classList.add('flip-out');
+
+                setTimeout(() => {
+                    currentFlipIndex = (currentFlipIndex + 1) % weatherItems.length;
+                    el.innerHTML = weatherItems[currentFlipIndex];
+                    el.classList.remove('flip-out');
+                    el.classList.add('flip-in');
+                }, 420);
+            }, flipIntervalMs);
+        }
+
+        function updateFlipSpeed() {
+            const sec = document.getElementById('input-flip-speed').value;
+            document.getElementById('flip-val').innerText = `${sec}s`;
+            flipIntervalMs = parseInt(sec, 10) * 1000;
+            startFlipCycle();
+        }
 
         function interpretWeatherCode(code) {
-            if (code === 0) return { label: "Clear Sky", icon: icons.clear };
-            if (code === 1 || code === 2) return { label: "Partly Cloudy", icon: icons.partlyCloudy };
-            if (code === 3) return { label: "Overcast", icon: icons.cloudy };
-            if (code >= 45 && code <= 48) return { label: "Foggy", icon: icons.cloudy };
-            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return { label: "Rain", icon: icons.rain };
-            if (code >= 71 && code <= 77) return { label: "Snow", icon: icons.cloudy };
-            if (code >= 95) return { label: "Thunderstorm", icon: icons.rain };
-            return { label: "Partly Cloudy", icon: icons.partlyCloudy };
+            if (code === 0) return { label: "Clear Sky", icon: weatherIcons.clear };
+            if (code === 1 || code === 2) return { label: "Partly Cloudy", icon: weatherIcons.partlyCloudy };
+            if (code === 3) return { label: "Overcast", icon: weatherIcons.cloudy };
+            if (code >= 45 && code <= 48) return { label: "Foggy", icon: weatherIcons.cloudy };
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return { label: "Rain", icon: weatherIcons.rain };
+            if (code >= 71 && code <= 77) return { label: "Snow", icon: weatherIcons.cloudy };
+            if (code >= 95) return { label: "Thunderstorm", icon: weatherIcons.rain };
+            return { label: "Partly Cloudy", icon: weatherIcons.partlyCloudy };
         }
 
         function mapTextToIcon(desc) {
             const d = desc.toLowerCase();
-            if (d.includes("sun") || d.includes("clear")) return icons.clear;
-            if (d.includes("partly") || d.includes("few clouds")) return icons.partlyCloudy;
-            if (d.includes("rain") || d.includes("drizzle") || d.includes("shower") || d.includes("storm")) return icons.rain;
-            return icons.cloudy;
+            if (d.includes("sun") || d.includes("clear")) return weatherIcons.clear;
+            if (d.includes("partly") || d.includes("few clouds")) return weatherIcons.partlyCloudy;
+            if (d.includes("rain") || d.includes("drizzle") || d.includes("shower") || d.includes("storm")) return weatherIcons.rain;
+            return weatherIcons.cloudy;
+        }
+
+        function getWindDirection(deg) {
+            if (deg === undefined || deg === null) return "";
+            const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+            return dirs[Math.round(deg / 45) % 8];
         }
 
         function selectPreset() {
@@ -452,6 +703,28 @@
                 document.getElementById('input-location-label').value = presets[key].label;
                 activeCoords = { lat: presets[key].lat, lon: presets[key].lon };
             }
+        }
+
+        function applyTheme() {
+            const key = document.getElementById('theme-select').value;
+            const t = themes[key];
+            if (!t) return;
+            document.documentElement.style.setProperty('--top-bg', t.topBg);
+            document.documentElement.style.setProperty('--bottom-bg', t.bottomBg);
+            document.documentElement.style.setProperty('--top-border-color', t.topBorder);
+            document.documentElement.style.setProperty('--bottom-border-color', t.bottomBorder);
+            document.documentElement.style.setProperty('--sub-border-color', t.subBorder);
+        }
+
+        function updateLiveIcon() {
+            const key = document.getElementById('live-icon-select').value;
+            document.getElementById('live-icon-container').innerHTML = liveIcons[key] || "";
+        }
+
+        function updateTickerSpeed() {
+            const speed = document.getElementById('input-speed').value;
+            document.getElementById('speed-val').innerText = `${speed}s`;
+            document.documentElement.style.setProperty('--ticker-speed', `${speed}s`);
         }
 
         async function fetchWeather(city, coords = null) {
@@ -471,7 +744,8 @@
                     const geoData = await geoRes.json();
 
                     if (!geoData.results || geoData.results.length === 0) {
-                        document.getElementById('display-desc').innerText = "City not found";
+                        weatherItems = ["City not found"];
+                        startFlipCycle();
                         statusEl.innerText = "City not found in database.";
                         return;
                     }
@@ -480,18 +754,30 @@
                     activeCoords = { lat, lon };
                 }
 
-                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`;
+                // Fetch temperature, condition, humidity, pressure, wind speed & wind direction
+                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,pressure_msl,wind_speed_10m,wind_direction_10m,weather_code`;
                 const weatherRes = await fetch(weatherUrl);
                 if (!weatherRes.ok) throw new Error("Open-Meteo weather failed");
                 const weatherData = await weatherRes.json();
 
-                const temp = Math.round(weatherData.current.temperature_2m);
-                const code = weatherData.current.weather_code;
-                const info = interpretWeatherCode(code);
+                const cur = weatherData.current;
+                const temp = Math.round(cur.temperature_2m);
+                const humidity = Math.round(cur.relative_humidity_2m);
+                const pressure = Math.round(cur.pressure_msl);
+                const windSpeed = Math.round(cur.wind_speed_10m);
+                const windDir = getWindDirection(cur.wind_direction_10m);
+                const info = interpretWeatherCode(cur.weather_code);
 
                 document.getElementById('display-temp').innerText = `${temp}°C`;
-                document.getElementById('display-desc').innerText = info.label;
                 document.getElementById('weather-icon').innerHTML = info.icon;
+
+                weatherItems = [
+                    info.label,
+                    `Wind: <span class="metric-highlight">${windDir} ${windSpeed} km/h</span>`,
+                    `Humidity: <span class="metric-highlight">${humidity}%</span>`,
+                    `Pressure: <span class="metric-highlight">${pressure} hPa</span>`
+                ];
+                startFlipCycle();
                 statusEl.innerText = "Updated via Open-Meteo ✔";
             } catch (primaryError) {
                 try {
@@ -499,15 +785,28 @@
                     if (!fallbackRes.ok) throw new Error("Fallback failed");
                     const fallbackData = await fallbackRes.json();
                     const current = fallbackData.current_condition[0];
+
                     const temp = current.temp_C;
                     const desc = current.weatherDesc[0].value;
+                    const windSpeed = current.windspeedKmph;
+                    const windDir = current.winddir16Point;
+                    const humidity = current.humidity;
+                    const pressure = current.pressure;
 
                     document.getElementById('display-temp').innerText = `${temp}°C`;
-                    document.getElementById('display-desc').innerText = desc;
                     document.getElementById('weather-icon').innerHTML = mapTextToIcon(desc);
+
+                    weatherItems = [
+                        desc,
+                        `Wind: <span class="metric-highlight">${windDir} ${windSpeed} km/h</span>`,
+                        `Humidity: <span class="metric-highlight">${humidity}%</span>`,
+                        `Pressure: <span class="metric-highlight">${pressure} hPa</span>`
+                    ];
+                    startFlipCycle();
                     statusEl.innerText = "Updated via Backup Weather ✔";
                 } catch (fallbackError) {
-                    document.getElementById('display-desc').innerText = "Weather Offline";
+                    weatherItems = ["Weather Offline"];
+                    startFlipCycle();
                     statusEl.innerText = "Network/CORS block. Host on GitHub Pages to run live.";
                 }
             }
@@ -526,6 +825,7 @@
             const presetKey = document.getElementById('airport-preset').value;
             const cityInput = document.getElementById('input-city').value.trim();
             const locLabel = document.getElementById('input-location-label').value.trim();
+            const statusLabel = document.getElementById('input-status-label').value.trim();
             const badgeText = document.getElementById('input-badge').value.trim();
             const newsText = document.getElementById('input-news').value.trim();
 
@@ -539,11 +839,17 @@
             }
 
             if (locLabel) document.getElementById('display-location').innerText = locLabel;
+            if (statusLabel) document.getElementById('display-status-label').innerText = statusLabel;
             if (badgeText) document.getElementById('display-badge').innerText = badgeText;
             if (newsText) {
                 const formattedNews = newsText.replace(/•/g, '&nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;');
                 document.getElementById('display-news').innerHTML = formattedNews;
             }
+
+            applyTheme();
+            updateLiveIcon();
+            updateTickerSpeed();
+            updateFlipSpeed();
         }
 
         function togglePanel() {
