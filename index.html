@@ -77,16 +77,17 @@
   .tick-sep{color:var(--accent-orange);font-size:0.6em;}
   @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  /* ===== PANEL TOGGLE ===== */
+  /* ===== PANEL TOGGLE (TOUCH FRIENDLY) ===== */
   .panel-toggle{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:12px;
     width:44px;height:44px;border-radius:12px;border:1px solid var(--border);
     background:rgba(10,15,26,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     color:var(--text);font-size:20px;cursor:pointer;z-index:100;
     display:flex;align-items:center;justify-content:center;
-    opacity:0.15; transition:opacity 0.2s;}
-  .panel-toggle:hover,.panel-toggle:active{opacity:1}
+    opacity:0.1; /* Quase invisível no iPad */
+    transition:opacity 0.3s;}
+  .panel-toggle:active{opacity:1;} /* Fica 100% visível ao tocar */
   
-  /* Classe para esconder o botão manualmente com a tecla H */
+  /* Esconde o botão se estiver no modo limpo (?clean=1) */
   .panel-toggle.force-hide { display: none !important; }
 
   /* ===== DRAWER ===== */
@@ -160,11 +161,10 @@
     <section>
       <h2>Preview Background</h2>
       <div class="bg-toggle" id="bgToggle">
-        <button data-bg="transparent">Transparent (OBS)</button>
+        <button data-bg="transparent">Transparent (OBS/Yololiv)</button>
         <button data-bg="black">Black</button>
         <button data-bg="preview">Preview</button>
       </div>
-      <p class="hint">In "Transparent" mode the background is clean for OBS.<br>Press <b>H</b> on your keyboard to hide/show the ⚙ button.</p>
     </section>
 
     <!-- WEATHER -->
@@ -233,7 +233,7 @@
       <h2>Ticker / News</h2>
       <label>External URL (CSV or TXT)</label>
       <input type="url" id="sheetUrl" placeholder="https://gist.githubusercontent.com/.../raw/news.txt">
-      <p class="hint">Supports Google Sheets (CSV) or any plain text file (.txt).<br>For Apple Notes: export as .txt, upload to Gist, and paste the "Raw" URL.</p>
+      <p class="hint">Supports Google Sheets (CSV) or any plain text file (.txt).</p>
       
       <label>Local Messages (one per line)</label>
       <textarea id="messages"></textarea>
@@ -316,10 +316,19 @@ function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather
 
 let state = merge(DEFAULTS, safeGet() || {});
 
-// Força o fundo se vier pela URL (?bg=transparent)
+// ===== LÓGICA PARA YOLOLIV E IPAD =====
 const urlParams = new URLSearchParams(window.location.search);
 const forcedBg = urlParams.get('bg');
+const cleanMode = urlParams.get('clean');
+
 if (forcedBg) state.bg = forcedBg;
+
+if (cleanMode === '1') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('panelToggle');
+    if(toggleBtn) toggleBtn.classList.add('force-hide');
+  });
+}
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -335,14 +344,6 @@ function applyBg(){
   else if(state.bg === 'black') document.body.classList.add('bg-black');
   else if(state.bg === 'preview') document.body.classList.add('preview');
 }
-
-// Atalho de teclado (H) para esconder/mostrar o botão manualmente
-document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'h') {
-    const toggleBtn = document.getElementById('panelToggle');
-    if (toggleBtn) toggleBtn.classList.toggle('force-hide');
-  }
-});
 
 function renderWeather(){
   els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
@@ -581,6 +582,16 @@ renderAll();
 updateUI();
 setInterval(renderClock, 1000);
 setInterval(() => { if(state.sheetUrl) reloadTicker(); }, 120000);
+
+// ===== DESPERTADOR PARA YOLOLIV =====
+// Força o relógio e o ticker a atualizarem quando o app volta ao foco
+window.addEventListener('focus', () => { renderClock(); if(state.sheetUrl) reloadTicker(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    renderClock();
+    if(state.sheetUrl) reloadTicker();
+  }
+});
 </script>
 </body>
 </html>
