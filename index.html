@@ -77,17 +77,22 @@
   .tick-sep{color:var(--accent-orange);font-size:0.6em;}
   @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  /* ===== PANEL TOGGLE (TOUCH FRIENDLY) ===== */
+  /* PULSO INVISÍVEL PARA FORÇAR O YOLOLIV A REDESENHAR */
+  @keyframes forceRedraw {
+    0% { opacity: 0.999; }
+    50% { opacity: 1; }
+    100% { opacity: 0.999; }
+  }
+  .bar { animation: forceRedraw 1s infinite; }
+
+  /* ===== PANEL TOGGLE ===== */
   .panel-toggle{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:12px;
     width:44px;height:44px;border-radius:12px;border:1px solid var(--border);
     background:rgba(10,15,26,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     color:var(--text);font-size:20px;cursor:pointer;z-index:100;
     display:flex;align-items:center;justify-content:center;
-    opacity:0.1; /* Quase invisível no iPad */
-    transition:opacity 0.3s;}
-  .panel-toggle:active{opacity:1;} /* Fica 100% visível ao tocar */
-  
-  /* Esconde o botão se estiver no modo limpo (?clean=1) */
+    opacity:0.15; transition:opacity 0.3s;}
+  .panel-toggle:active{opacity:1;}
   .panel-toggle.force-hide { display: none !important; }
 
   /* ===== DRAWER ===== */
@@ -157,7 +162,6 @@
   </header>
   <div class="content">
     
-    <!-- BACKGROUND -->
     <section>
       <h2>Preview Background</h2>
       <div class="bg-toggle" id="bgToggle">
@@ -167,7 +171,6 @@
       </div>
     </section>
 
-    <!-- WEATHER -->
     <section>
       <h2>Weather Condition</h2>
       <div class="weather-grid" id="weatherGrid"></div>
@@ -196,7 +199,6 @@
       </div>
     </section>
 
-    <!-- LOCATION & NEWS -->
     <section>
       <h2>Location</h2>
       <label>Airport / Location</label>
@@ -205,7 +207,6 @@
       <input type="text" id="newsLabel" placeholder="Aviation News">
     </section>
 
-    <!-- CLOCK -->
     <section>
       <h2>Clock</h2>
       <div class="row-2">
@@ -228,16 +229,12 @@
       </div>
     </section>
 
-    <!-- TICKER -->
     <section>
       <h2>Ticker / News</h2>
       <label>External URL (CSV or TXT)</label>
       <input type="url" id="sheetUrl" placeholder="https://gist.githubusercontent.com/.../raw/news.txt">
-      <p class="hint">Supports Google Sheets (CSV) or any plain text file (.txt).</p>
-      
       <label>Local Messages (one per line)</label>
       <textarea id="messages"></textarea>
-      
       <label>Ticker Speed</label>
       <input type="range" id="tickerSpeed" min="20" max="120" step="1">
     </section>
@@ -250,10 +247,8 @@
   </div>
 </aside>
 
-<!-- ===== OVERLAY ===== -->
 <div class="overlay" id="overlayMain">
   <div class="bar">
-    <!-- Top Row -->
     <div class="row">
       <div class="weather">
         <span class="w-icon" id="wIcon"></span>
@@ -271,7 +266,6 @@
       </div>
     </div>
 
-    <!-- Bottom Row -->
     <div class="row">
       <div class="left-info">
         <div class="location">
@@ -316,17 +310,11 @@ function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather
 
 let state = merge(DEFAULTS, safeGet() || {});
 
-// ===== LÓGICA PARA YOLOLIV E IPAD =====
 const urlParams = new URLSearchParams(window.location.search);
-const forcedBg = urlParams.get('bg');
-const cleanMode = urlParams.get('clean');
-
-if (forcedBg) state.bg = forcedBg;
-
-if (cleanMode === '1') {
+if (urlParams.get('bg')) state.bg = urlParams.get('bg');
+if (urlParams.get('clean') === '1') {
   document.addEventListener('DOMContentLoaded', () => {
-    const toggleBtn = document.getElementById('panelToggle');
-    if(toggleBtn) toggleBtn.classList.add('force-hide');
+    document.getElementById('panelToggle')?.classList.add('force-hide');
   });
 }
 
@@ -371,6 +359,14 @@ function renderClock(){
   els.dateTop.textContent = (tz === 'Asia/Tokyo') ? 'Japan Time' : tz;
 }
 
+// LOOP DE ANIMAÇÃO FORÇADO (Para driblar o bloqueio do Yololiv)
+let lastTime = '';
+function clockLoop() {
+  renderClock();
+  requestAnimationFrame(clockLoop);
+}
+clockLoop();
+
 function buildGroup(list){
   const g = document.createElement('div');
   g.className = 'ticker-group';
@@ -411,13 +407,12 @@ function renderTicker(list){
 function fetchText(url) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
+    // Adiciona o "cache buster" para o Yololiv não pegar dados velhos da memória
+    const bustUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    xhr.open('GET', bustUrl, true);
     xhr.onload = function() {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(xhr.responseText);
-      } else {
-        reject(new Error('HTTP Status ' + xhr.status));
-      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+      else reject(new Error('HTTP Status ' + xhr.status));
     };
     xhr.onerror = function() { reject(new Error('Network Error (CORS or invalid URL)')); };
     xhr.send();
@@ -477,7 +472,6 @@ function renderAll(){
   applyBg();
   renderWeather();
   renderStatic();
-  renderClock();
   reloadTicker();
 }
 
@@ -498,15 +492,8 @@ Object.keys(ICONS).forEach(k => {
   b.addEventListener('click', () => {
     state.weather = state.weather || {};
     state.weather.icon = k;
-    
-    const map = {
-      clear: 'Clear', partly: 'Partly Cloudy', cloudy: 'Cloudy', 
-      rain: 'Rain', thunder: 'Thunderstorm', snow: 'Snow', fog: 'Fog'
-    };
-    if(map[k]) {
-      state.weather.condition = map[k];
-    }
-    
+    const map = { clear: 'Clear', partly: 'Partly Cloudy', cloudy: 'Cloudy', rain: 'Rain', thunder: 'Thunderstorm', snow: 'Snow', fog: 'Fog' };
+    if(map[k]) state.weather.condition = map[k];
     updateAll();
   });
   wg.appendChild(b);
@@ -580,17 +567,12 @@ function updateAll(){
 
 renderAll();
 updateUI();
-setInterval(renderClock, 1000);
 setInterval(() => { if(state.sheetUrl) reloadTicker(); }, 120000);
 
-// ===== DESPERTADOR PARA YOLOLIV =====
-// Força o relógio e o ticker a atualizarem quando o app volta ao foco
-window.addEventListener('focus', () => { renderClock(); if(state.sheetUrl) reloadTicker(); });
+// Força atualização quando a tela volta ao foco no Yololiv
+window.addEventListener('focus', () => { if(state.sheetUrl) reloadTicker(); });
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    renderClock();
-    if(state.sheetUrl) reloadTicker();
-  }
+  if (document.visibilityState === 'visible' && state.sheetUrl) reloadTicker();
 });
 </script>
 </body>
