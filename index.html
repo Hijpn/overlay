@@ -18,7 +18,6 @@
     background:transparent;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
     color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
   
-  /* Classes de fundo para o OBS */
   body.bg-green{background:#00ff00}
   body.bg-black{background:#000}
   body.preview{background:#0b1220}
@@ -86,6 +85,7 @@
     display:flex;align-items:center;justify-content:center;
     opacity:0.8; transition:opacity 0.2s;}
   .panel-toggle:hover,.panel-toggle:active{opacity:1}
+  .panel-toggle.hidden { display: none !important; }
 
   /* ===== DRAWER ===== */
   .drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);
@@ -162,6 +162,7 @@
         <button data-bg="black">Black</button>
         <button data-bg="preview">Preview</button>
       </div>
+      <p class="hint">In "Transparent" mode, the settings button (⚙) hides automatically.<br>Press <b>H</b> to toggle the button visibility manually.</p>
     </section>
 
     <!-- WEATHER -->
@@ -313,12 +314,10 @@ function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather
 
 let state = merge(DEFAULTS, safeGet() || {});
 
-// ===== LÊ O LINK DO OBS (?bg=transparent) =====
+// Força o fundo se vier pela URL (?bg=transparent)
 const urlParams = new URLSearchParams(window.location.search);
 const forcedBg = urlParams.get('bg');
-if (forcedBg) {
-  state.bg = forcedBg;
-}
+if (forcedBg) state.bg = forcedBg;
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -333,7 +332,25 @@ function applyBg(){
   if(state.bg === 'green') document.body.classList.add('bg-green');
   else if(state.bg === 'black') document.body.classList.add('bg-black');
   else if(state.bg === 'preview') document.body.classList.add('preview');
+  
+  // Lógica para esconder o botão ⚙ no modo Transparente (OBS)
+  const toggleBtn = document.getElementById('panelToggle');
+  if (toggleBtn) {
+    if (state.bg === 'transparent') {
+      toggleBtn.classList.add('hidden');
+    } else {
+      toggleBtn.classList.remove('hidden');
+    }
+  }
 }
+
+// Atalho de teclado (H) para esconder/mostrar o botão no navegador
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'h') {
+    const toggleBtn = document.getElementById('panelToggle');
+    if (toggleBtn) toggleBtn.classList.toggle('hidden');
+  }
+});
 
 function renderWeather(){
   els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
