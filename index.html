@@ -177,7 +177,7 @@ if (!urlParams.has('t')) {
   window.location.search = '?t=' + Date.now();
 }
 
-const STORAGE_KEY = 'sky_stations_config_api_v1';
+const STORAGE_KEY = 'sky_stations_config_api_v2';
 
 const ICONS = {
   clear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
@@ -216,17 +216,17 @@ function saveConfig(config) {
 async function fetchWeather(cityName) {
   if (!cityName) return null;
   try {
-    // 1. Get coordinates from city name
     const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
     const geoData = await geoRes.json();
     if (!geoData.results || geoData.results.length === 0) throw new Error("City not found");
     
     const { latitude, longitude } = geoData.results[0];
     
-    // 2. Get current weather
     const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
     const wData = await weatherRes.json();
     
+    if (!wData.current) throw new Error("Weather data unavailable");
+
     return {
       temp: Math.round(wData.current.temperature_2m),
       conditionCode: wData.current.weather_code
@@ -238,7 +238,6 @@ async function fetchWeather(cityName) {
 }
 
 function getWeatherDetails(code) {
-  // WMO Weather interpretation codes
   if (code === 0) return { text: "Clear Sky", icon: ICONS.clear };
   if ([1, 2, 3].includes(code)) return { text: "Partly Cloudy", icon: ICONS.partly };
   if ([45, 48].includes(code)) return { text: "Fog", icon: ICONS.fog };
@@ -257,12 +256,11 @@ async function updateUI() {
   let displayCond = config.cond;
   let displayIcon = ICONS.partly;
 
-  // Attempt auto-fetch if city is provided
   if (config.city) {
     const liveWeather = await fetchWeather(config.city);
     if (liveWeather) {
       displayTemp = liveWeather.temp;
-      const details = getWeatherDetails(liveWeather.conditioncode ?? liveWeather.weather_code);
+      const details = getWeatherDetails(liveWeather.conditionCode);
       displayCond = details.text;
       displayIcon = details.icon;
     }
@@ -276,7 +274,6 @@ async function updateUI() {
   document.getElementById('labelDisplay').textContent = config.label;
   document.getElementById('tzDisplay').textContent = config.tz === 'Asia/Tokyo' ? 'Japan Time' : config.tz;
 
-  // Sync drawer inputs
   document.getElementById('cityInput').value = config.city;
   document.getElementById('tempInput').value = config.temp;
   document.getElementById('condInput').value = config.cond;
@@ -285,13 +282,11 @@ async function updateUI() {
   document.getElementById('tzInput').value = config.tz;
   document.getElementById('newsInput').value = config.news.join('\n');
 
-  // Render Ticker
   const track = document.getElementById('tickerTrack');
   const groupHtml = config.news.map(item => `<span class="tick-item">${item}</span><span class="tick-sep">◆</span>`).join('');
   track.innerHTML = `<div class="ticker-group">${groupHtml}</div><div class="ticker-group">${groupHtml}</div>`;
 }
 
-// Live Clock in English
 function updateClock() {
   const config = loadConfig();
   const tz = config.tz || 'Asia/Tokyo';
@@ -309,7 +304,6 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// Drawer Events
 document.getElementById('panelToggle').addEventListener('click', () => document.getElementById('drawer').classList.add('open'));
 document.getElementById('closeDrawer').addEventListener('click', () => document.getElementById('drawer').classList.remove('open'));
 
@@ -326,7 +320,6 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   saveConfig(newConfig);
 });
 
-// Auto-sync across tabs/windows
 window.addEventListener('storage', (e) => {
   if (e.key === STORAGE_KEY) updateUI();
 });
