@@ -132,7 +132,6 @@
   .bg-toggle button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
     background:#182238;color:var(--text);font-size:12px;cursor:pointer;min-width:80px}
   .bg-toggle button.active{background:rgba(59,130,246,.2);border-color:var(--accent-blue)}
-  .hint{font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.5}
   .btn-primary{width:100%;padding:12px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;}
 
   @media(max-width:650px){
@@ -302,7 +301,6 @@ function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather
 
 let state = merge(DEFAULTS, safeGet() || {});
 
-// ===== LÊ OS DADOS DIRETO DA URL (PARA O YOLOLIV) =====
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('bg')) state.bg = urlParams.get('bg');
 if (urlParams.get('clean') === '1') {
@@ -330,9 +328,7 @@ function applyBg(){
   else if(state.bg === 'preview') document.body.classList.add('preview');
 }
 
-// ===== LOOP CONTÍNUO FORÇANDO O YOLOLIV A REDESENHAR =====
 function updateLoop() {
-  // Relógio
   const tz = state.timezone || 'Asia/Tokyo';
   const now = new Date();
   const time = now.toLocaleTimeString('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false });
@@ -345,15 +341,12 @@ function updateLoop() {
   els.date.textContent = date;
   els.dateTop.textContent = (tz === 'Asia/Tokyo') ? 'Japan Time' : tz;
 
-  // Temperatura e Clima (forçando atualização)
   els.wTemp.textContent = (state.weather?.temp ?? '--') + '°C';
   els.wCond.textContent = state.weather?.condition || '';
   
-  // Aeroporto e Label
   els.locationText.textContent = state.location || '';
   els.newsLabel.textContent = state.newsLabel || 'Aviation News';
 
-  // Ícone (só atualiza se mudou para não travar o render)
   if (els.wIcon.innerHTML.indexOf(state.weather?.icon) === -1) {
     els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
   }
@@ -529,6 +522,8 @@ $('resetBtn').addEventListener('click', () => {
 
 $('saveBtn').addEventListener('click', () => {
   updateAll();
+  // Dispara evento customizado para atualizar a página instantaneamente
+  window.dispatchEvent(new Event('local-storage-updated'));
   const btn = $('saveBtn');
   btn.textContent = 'Synced ✓';
   setTimeout(() => btn.textContent = 'Sync Now', 1500);
@@ -554,6 +549,26 @@ function updateAll(){
   renderAll();
   updateUI();
 }
+
+// ===== SINCRONIZAÇÃO AUTOMÁTICA ENTRE JANELAS / APPS =====
+window.addEventListener('storage', (event) => {
+  if (event.key === STORAGE_KEY && event.newValue) {
+    try {
+      const newData = JSON.parse(event.newValue);
+      state = merge(DEFAULTS, newData);
+      updateAll();
+      updateUI();
+    } catch (e) {
+      console.error('Erro ao sincronizar dados do storage:', e);
+    }
+  }
+});
+
+window.addEventListener('local-storage-updated', () => {
+  state = merge(DEFAULTS, safeGet() || {});
+  updateAll();
+  updateUI();
+});
 
 renderAll();
 updateUI();
