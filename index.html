@@ -3,256 +3,152 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Sky Stations</title>
+<title>Sky Stations - Live Overlay</title>
 <style>
-  :root{
-    --accent-blue:#3b82f6;
-    --accent-orange:#f97316;
-    --bg-glass:rgba(10,15,26,.85);
-    --border:rgba(148,163,184,.25);
-    --text:#ffffff;
-    --text-dim:#94a3b8;
+  :root {
+    --accent-blue: #3b82f6;
+    --accent-orange: #f97316;
+    --bg-glass: rgba(10, 15, 26, .85);
+    --border: rgba(148, 163, 184, .25);
+    --text: #ffffff;
+    --text-dim: #94a3b8;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;width:100%;height:100%;
-    background:transparent;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
-    color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    color: var(--text); overflow: hidden; -webkit-font-smoothing: antialiased;
+  }
   
-  body.bg-green{background:#00ff00}
-  body.bg-black{background:#000}
-  body.preview{background:#0b1220}
-
   /* ===== OVERLAY ===== */
-  .overlay{position:fixed;left:0;right:0;bottom:0;
-    padding:0 clamp(10px,1.5vw,30px) clamp(10px,1.5vw,30px);}
-  
-  .bar{position:relative;background:var(--bg-glass);
-    -webkit-backdrop-filter:blur(24px) saturate(140%);backdrop-filter:blur(24px) saturate(140%);
-    border:1px solid var(--border);
-    border-radius:clamp(10px,1vw,16px);
-    box-shadow:0 8px 32px rgba(0,0,0,.5);
-    display:flex;flex-direction:column;
-    padding:clamp(10px,1vw,16px) clamp(16px,1.5vw,24px);
-    gap:clamp(6px,.8vw,12px);
-    overflow:hidden;}
+  .overlay {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 0 clamp(10px, 1.5vw, 30px) clamp(10px, 1.5vw, 30px);
+  }
+  .bar {
+    position: relative; background: var(--bg-glass);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: clamp(10px, 1vw, 16px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    display: flex; flex-direction: column;
+    padding: clamp(10px, 1vw, 16px) clamp(16px, 1.5vw, 24px);
+    gap: clamp(6px, .8vw, 12px);
+    overflow: hidden;
+  }
+  .bar::before, .bar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 4px; }
+  .bar::before { left: 0; background: var(--accent-blue); }
+  .bar::after { right: 0; background: var(--accent-orange); }
 
-  .bar::before,.bar::after{content:"";position:absolute;top:0;bottom:0;width:4px;}
-  .bar::before{left:0;background:var(--accent-blue);}
-  .bar::after{right:0;background:var(--accent-orange);}
-
-  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 
   /* ===== TOP ROW ===== */
-  .weather{display:flex;align-items:center;gap:clamp(10px,1vw,16px);}
-  .w-icon{width:clamp(24px,2.2vw,36px);height:clamp(24px,2.2vw,36px);
-    color:#fbbf24; display:flex;align-items:center;justify-content:center;}
-  .w-icon svg{width:100%;height:100%;}
-  .w-temp{font-size:clamp(20px,2vw,32px);font-weight:600;letter-spacing:-.02em;}
-  .divider{width:1px;height:clamp(20px,2vw,28px);background:rgba(255,255,255,.2);border-radius:2px;margin:0 6px;}
-  .w-cond{font-size:clamp(14px,1.2vw,20px);font-weight:500;color:#e2e8f0;}
+  .weather { display: flex; align-items: center; gap: clamp(10px, 1vw, 16px); }
+  .w-icon { width: clamp(24px, 2.2vw, 36px); height: clamp(24px, 2.2vw, 36px); color: #fbbf24; display: flex; align-items: center; justify-content: center; }
+  .w-icon svg { width: 100%; height: 100%; }
+  .w-temp { font-size: clamp(20px, 2vw, 32px); font-weight: 600; letter-spacing: -.02em; }
+  .divider { width: 1px; height: clamp(20px, 2vw, 28px); background: rgba(255,255,255,.2); border-radius: 2px; margin: 0 6px; }
+  .w-cond { font-size: clamp(14px, 1.2vw, 20px); font-weight: 500; color: #e2e8f0; }
   
-  .clock{display:flex;align-items:center;gap:clamp(10px,1vw,16px);}
-  .time{font-size:clamp(24px,2.5vw,36px);font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
-  .date-box{display:flex;flex-direction:column;justify-content:center;}
-  .date-top{font-size:clamp(11px,.9vw,14px);font-weight:600;color:#fff;line-height:1.2;}
-  .date-bottom{font-size:clamp(11px,.9vw,14px);color:var(--text-dim);line-height:1.2;}
+  .clock { display: flex; align-items: center; gap: clamp(10px, 1vw, 16px); }
+  .time { font-size: clamp(24px, 2.5vw, 36px); font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .date-box { display: flex; flex-direction: column; justify-content: center; }
+  .date-top { font-size: clamp(11px, .9vw, 14px); font-weight: 600; color: #fff; line-height: 1.2; }
+  .date-bottom { font-size: clamp(11px, .9vw, 14px); color: var(--text-dim); line-height: 1.2; }
 
   /* ===== BOTTOM ROW ===== */
-  .left-info{display:flex;align-items:center;gap:clamp(10px,1vw,16px);flex-shrink:0;max-width:55%;}
-  .location{display:flex;align-items:center;gap:8px;font-size:clamp(14px,1.1vw,18px);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .location svg{width:18px;height:18px;fill:#fff;flex-shrink:0;}
-  .news-label{background:var(--accent-blue);color:#fff;padding:4px 12px;border-radius:6px;
-    font-size:clamp(11px,.9vw,14px);font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;flex-shrink:0;}
+  .left-info { display: flex; align-items: center; gap: clamp(10px, 1vw, 16px); flex-shrink: 0; max-width: 55%; }
+  .location { display: flex; align-items: center; gap: 8px; font-size: clamp(14px, 1.1vw, 18px); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .location svg { width: 18px; height: 18px; fill: #fff; flex-shrink: 0; }
+  .news-label { background: var(--accent-blue); color: #fff; padding: 4px 12px; border-radius: 6px; font-size: clamp(11px, .9vw, 14px); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; flex-shrink: 0; }
   
-  .ticker{flex:1;overflow:hidden;position:relative;height:100%;display:flex;align-items:center;
-    mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);
-    -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);}
-  .ticker-track{display:flex;white-space:nowrap;will-change:transform;animation:marquee 40s linear infinite;}
-  
-  .ticker-track.paused { animation-play-state: paused; justify-content: center; width: 100%; }
-  .ticker-track.paused .ticker-group:nth-child(2) { display: none; }
-
-  .ticker-group{display:inline-flex;align-items:center;gap:2em;padding-right:2em;}
-  .tick-item{font-size:clamp(13px,1vw,16px);font-weight:400;color:#fff;}
-  .tick-sep{color:var(--accent-orange);font-size:0.6em;}
-  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .ticker { flex: 1; overflow: hidden; position: relative; height: 100%; display: flex; align-items: center;
+    mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  }
+  .ticker-track { display: flex; white-space: nowrap; will-change: transform; animation: marquee 30s linear infinite; }
+  .ticker-group { display: inline-flex; align-items: center; gap: 2em; padding-right: 2em; }
+  .tick-item { font-size: clamp(13px, 1vw, 16px); font-weight: 400; color: #fff; }
+  .tick-sep { color: var(--accent-orange); font-size: 0.6em; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
   /* ===== PANEL TOGGLE ===== */
-  .panel-toggle{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:12px;
-    width:44px;height:44px;border-radius:12px;border:1px solid var(--border);
-    background:rgba(10,15,26,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-    color:var(--text);font-size:20px;cursor:pointer;z-index:100;
-    display:flex;align-items:center;justify-content:center;
-    opacity:0.15; transition:opacity 0.3s;}
-  .panel-toggle:active{opacity:1;}
-  .panel-toggle.force-hide { display: none !important; }
+  .panel-toggle { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 12px; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border);
+    background: rgba(10,15,26,.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: var(--text); font-size: 20px; cursor: pointer; z-index: 100;
+    display: flex; align-items: center; justify-content: center; opacity: 0.2; transition: opacity 0.3s;
+  }
+  .panel-toggle:hover, .panel-toggle:active { opacity: 1; }
 
   /* ===== DRAWER ===== */
-  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);
-    background:rgba(11,18,32,.97);-webkit-backdrop-filter:blur(28px);backdrop-filter:blur(28px);
-    border-left:1px solid var(--border);transform:translateX(100%);
-    transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:200;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);color:var(--text)}
-  .drawer.open{transform:translateX(0)}
-  .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;
-    pointer-events:none;transition:opacity .3s;z-index:150}
-  .drawer-backdrop.show{opacity:1;pointer-events:auto}
-  .drawer header{position:sticky;top:0;background:rgba(11,18,32,.98);
-    -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
-    padding:16px 20px;border-bottom:1px solid var(--border);
-    display:flex;justify-content:space-between;align-items:center;z-index:1}
-  .drawer h1{margin:0;font-size:16px;font-weight:700;
-    background:linear-gradient(90deg,var(--accent-blue),var(--accent-orange));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .drawer .close-btn{background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:0 8px}
-  .drawer .content{padding:16px 20px 40px}
-  .drawer section{margin:0 0 20px}
-  .drawer section h2{margin:0 0 10px;font-size:11px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--accent-orange);font-weight:700}
-  .drawer label{display:block;margin:10px 0 6px;font-size:12px;color:var(--text-dim)}
-  .drawer input[type=text],.drawer input[type=number],.drawer input[type=url],
-  .drawer textarea,.drawer select{width:100%;padding:11px 13px;border-radius:10px;
-    border:1px solid var(--border);background:#182238;color:var(--text);
-    font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none}
-  .drawer textarea{min-height:100px;resize:vertical}
-  .drawer input:focus,.drawer textarea:focus,.drawer select:focus{outline:none;
-    border-color:var(--accent-blue);box-shadow:0 0 0 3px rgba(59,130,246,.18)}
-  
-  .weather-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
-  .weather-grid button{background:#182238;border:1px solid var(--border);
-    color:var(--text);border-radius:10px;padding:10px 4px;font-size:10px;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s}
-  .weather-grid button svg{width:22px;height:22px}
-  .weather-grid button.active{border-color:var(--accent-blue);
-    background:rgba(59,130,246,.15);box-shadow:0 0 0 2px rgba(59,130,246,.25)}
-  
-  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .bg-toggle{display:flex;gap:8px;flex-wrap:wrap}
-  .bg-toggle button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);
-    background:#182238;color:var(--text);font-size:12px;cursor:pointer;min-width:80px}
-  .bg-toggle button.active{background:rgba(59,130,246,.2);border-color:var(--accent-blue)}
-  .btn-primary{width:100%;padding:12px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;}
-
-  @media(max-width:650px){
-    .date-box{display:none;}
-    .news-label{display:none;}
-    .left-info{max-width:40%;}
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 92vw);
+    background: rgba(11,18,32,.98); -webkit-backdrop-filter: blur(28px); backdrop-filter: blur(28px); border-left: 1px solid var(--border);
+    transform: translateX(100%); transition: transform .3s ease; z-index: 200; overflow-y: auto; padding: 20px; color: var(--text);
   }
+  .drawer.open { transform: translateX(0); }
+  .drawer header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  .drawer h1 { margin: 0; font-size: 18px; font-weight: 700;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .drawer label { display: block; margin-top: 15px; font-size: 12px; color: var(--text-dim); }
+  .drawer input, .drawer select, .drawer textarea { width: 100%; padding: 10px 12px; margin-top: 6px; border-radius: 8px; border: 1px solid var(--border); background: #182238; color: var(--text); font-size: 14px; font-family: inherit; }
+  .btn-save { width: 100%; padding: 12px; margin-top: 20px; border-radius: 8px; border: none; background: #16a34a; color: #fff; font-size: 14px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<button class="panel-toggle" id="panelToggle" title="Settings">⚙</button>
-<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<button class="panel-toggle" id="panelToggle" title="Settings">⚙️</button>
 
 <aside class="drawer" id="drawer">
   <header>
-    <h1>Sky Stations</h1>
-    <button class="close-btn" id="closeDrawer">✕</button>
+    <h1>Sky Stations Settings</h1>
+    <button id="closeDrawer" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">✕</button>
   </header>
-  <div class="content">
+  <div>
+    <label>Temperature (°C)</label>
+    <input type="number" id="tempInput" value="18">
     
-    <section>
-      <h2>Preview Background</h2>
-      <div class="bg-toggle" id="bgToggle">
-        <button data-bg="transparent">Transparent</button>
-        <button data-bg="black">Black</button>
-        <button data-bg="preview">Preview</button>
-      </div>
-    </section>
+    <label>Weather Condition</label>
+    <input type="text" id="condInput" value="Partly Cloudy">
+    
+    <label>Airport / Location</label>
+    <input type="text" id="locInput" value="Nagoya Area (Komaki)">
 
-    <section>
-      <h2>Weather Condition</h2>
-      <div class="weather-grid" id="weatherGrid"></div>
-      <div class="row-2">
-        <div>
-          <label>Temperature (°C)</label>
-          <input type="number" id="temp" min="-40" max="60">
-        </div>
-        <div>
-          <label>Condition Text</label>
-          <select id="condition">
-            <option value="Clear">Clear</option>
-            <option value="Sunny">Sunny</option>
-            <option value="Partly Cloudy">Partly Cloudy</option>
-            <option value="Cloudy">Cloudy</option>
-            <option value="Overcast">Overcast</option>
-            <option value="Light Rain">Light Rain</option>
-            <option value="Rain">Rain</option>
-            <option value="Heavy Rain">Heavy Rain</option>
-            <option value="Thunderstorm">Thunderstorm</option>
-            <option value="Snow">Snow</option>
-            <option value="Fog">Fog</option>
-            <option value="Windy">Windy</option>
-          </select>
-        </div>
-      </div>
-    </section>
+    <label>News Badge Label</label>
+    <input type="text" id="labelInput" value="Aviation News">
 
-    <section>
-      <h2>Location</h2>
-      <label>Airport / Location</label>
-      <input type="text" id="location" placeholder="Nagoya Area (Komaki)">
-      <label>News Label (Blue Pill)</label>
-      <input type="text" id="newsLabel" placeholder="Aviation News">
-    </section>
-
-    <section>
-      <h2>Clock</h2>
-      <div class="row-2">
-        <div>
-          <label>Time Zone</label>
-          <select id="timezone">
-            <option value="Asia/Tokyo">Tokyo (Japan Time)</option>
-            <option value="Asia/Seoul">Seoul</option>
-            <option value="Asia/Shanghai">Shanghai</option>
-            <option value="UTC">UTC</option>
-          </select>
-        </div>
-        <div>
-          <label>Date Format</label>
-          <select id="dateFormat">
-            <option value="short">Nov 17, 2026</option>
-            <option value="medium">17 Nov 2026</option>
-          </select>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Ticker / News</h2>
-      <label>External URL (CSV or TXT)</label>
-      <input type="url" id="sheetUrl" placeholder="https://gist.githubusercontent.com/.../raw/news.txt">
-      <label>Local Messages (one per line)</label>
-      <textarea id="messages"></textarea>
-      <label>Ticker Speed</label>
-      <input type="range" id="tickerSpeed" min="20" max="120" step="1">
-    </section>
-
-    <section>
-      <button id="resetBtn" style="width:100%;padding:12px;border-radius:10px;border:1px solid #7f1d1d;background:#7f1d1d;color:#fff;font-size:13px;cursor:pointer;margin-bottom:10px;">Reset All</button>
-      <button id="saveBtn" class="btn-primary">Sync Now</button>
-      <p id="syncStatus" style="text-align:center;font-size:11px;color:#94a3b8;margin-top:8px;min-height:14px;"></p>
-    </section>
+    <label>Time Zone</label>
+    <select id="tzInput">
+      <option value="Asia/Tokyo">Tokyo (Japan Time)</option>
+      <option value="Asia/Seoul">Seoul</option>
+      <option value="UTC">UTC</option>
+    </select>
+    
+    <label>Ticker Messages (one per line)</label>
+    <textarea id="newsInput" rows="5">JAL to increase international flights in 2027
+Winds calm, visibility 10 km</textarea>
+    
+    <button class="btn-save" id="saveBtn">Save &amp; Sync Now</button>
   </div>
 </aside>
 
-<div class="overlay" id="overlayMain">
+<div class="overlay">
   <div class="bar">
     <div class="row">
       <div class="weather">
-        <span class="w-icon" id="wIcon"></span>
-        <span class="w-temp" id="wTemp">18°C</span>
+        <span class="w-icon" id="wIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
+        </span>
+        <span class="w-temp" id="wTemp">--°C</span>
         <div class="divider"></div>
-        <span class="w-cond" id="wCond">Partly Cloudy</span>
+        <span class="w-cond" id="wCond">Loading...</span>
       </div>
       <div class="clock">
-        <span class="time" id="time">14:32</span>
+        <span class="time" id="timeDisplay">00:00</span>
         <div class="divider"></div>
         <div class="date-box">
-          <span class="date-top" id="dateTop">Japan Time</span>
-          <span class="date-bottom" id="date">Nov 17, 2026</span>
+          <span class="date-top" id="tzDisplay">Japan Time</span>
+          <span class="date-bottom" id="dateDisplay">---</span>
         </div>
       </div>
     </div>
@@ -261,10 +157,10 @@
       <div class="left-info">
         <div class="location">
           <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <span id="locationText">Nagoya Area (Komaki)</span>
+          <span id="locDisplay">---</span>
         </div>
         <div class="divider"></div>
-        <span class="news-label" id="newsLabel">Aviation News</span>
+        <span class="news-label" id="labelDisplay">Aviation News</span>
       </div>
       <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
     </div>
@@ -272,307 +168,109 @@
 </div>
 
 <script>
-const STORAGE_KEY = 'sky-stations-config';
-const DEFAULTS = {
-  weather:{ icon:'partly', temp:18, condition:'Partly Cloudy' },
-  location:'Nagoya Area (Komaki)',
-  newsLabel:'Aviation News',
-  timezone:'Asia/Tokyo',
-  dateFormat:'short',
-  messages:['JAL to increase international flights in 2027','Tokyo Narita reports new terminal expansions','Winds calm, visibility 10 km'],
-  sheetUrl:'',
-  tickerSpeed:55,
-  bg:'preview'
-};
-const ICONS = {
-  clear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-  partly:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>`,
-  cloudy:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
-  rain:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`,
-  thunder:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`,
-  snow:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 15h.01"/><path d="M8 19h.01"/><path d="M12 17h.01"/><path d="M12 21h.01"/><path d="M16 15h.01"/><path d="M16 19h.01"/></svg>`,
-  fog:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>`
-};
-const ICON_LABELS = { clear:'Clear', partly:'Partly', cloudy:'Cloudy', rain:'Rain', thunder:'Thunder', snow:'Snow', fog:'Fog' };
-
-function safeGet(){ try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e){ return null; } }
-function safeSet(v){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(v)); } catch(e){} }
-function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather||{}) }, messages: Array.isArray(o?.messages) ? o.messages : b.messages }; }
-
-let state = merge(DEFAULTS, safeGet() || {});
-
+// Force cache bypass using timestamp URL parameter
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('bg')) state.bg = urlParams.get('bg');
-if (urlParams.get('clean') === '1') {
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('panelToggle')?.classList.add('force-hide');
-  });
-}
-if (urlParams.has('temp')) state.weather.temp = Number(urlParams.get('temp'));
-if (urlParams.has('cond')) state.weather.condition = urlParams.get('cond');
-if (urlParams.has('loc')) state.location = urlParams.get('loc');
-if (urlParams.has('label')) state.newsLabel = urlParams.get('label');
-
-const $ = id => document.getElementById(id);
-const els = {
-  wIcon:$('wIcon'), wTemp:$('wTemp'), wCond:$('wCond'),
-  time:$('time'), date:$('date'), dateTop:$('dateTop'),
-  locationText:$('locationText'), newsLabel:$('newsLabel'),
-  tickerTrack:$('tickerTrack')
-};
-
-function applyBg(){
-  document.body.classList.remove('bg-green','bg-black','preview');
-  if(state.bg === 'green') document.body.classList.add('bg-green');
-  else if(state.bg === 'black') document.body.classList.add('bg-black');
-  else if(state.bg === 'preview') document.body.classList.add('preview');
+if (!urlParams.has('t')) {
+  window.location.search = '?t=' + Date.now();
 }
 
-function updateLoop() {
-  const tz = state.timezone || 'Asia/Tokyo';
+const STORAGE_KEY = 'sky_stations_config_en_v1';
+
+function loadConfig() {
+  const data = localStorage.getItem(STORAGE_KEY);
+  const defaults = {
+    temp: 18,
+    cond: 'Partly Cloudy',
+    loc: 'Nagoya Area (Komaki)',
+    label: 'Aviation News',
+    tz: 'Asia/Tokyo',
+    news: [
+      'JAL to increase international flights in 2027',
+      'Winds calm, visibility 10 km'
+    ]
+  };
+  
+  const saved = data ? JSON.parse(data) : defaults;
+
+  // Allow URL overrides (e.g., ?temp=20&loc=Centrair)
+  if (urlParams.has('temp')) saved.temp = urlParams.get('temp');
+  if (urlParams.has('cond')) saved.cond = urlParams.get('cond');
+  if (urlParams.has('loc')) saved.loc = urlParams.get('loc');
+  if (urlParams.has('label')) saved.label = urlParams.get('label');
+
+  return saved;
+}
+
+function saveConfig(config) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  // Update URL timestamp to force streaming WebViews to reload cleanly
+  const currentParams = new URLSearchParams(window.location.search);
+  currentParams.set('t', Date.now());
+  window.location.search = currentParams.toString();
+}
+
+function updateUI() {
+  const config = loadConfig();
+  document.getElementById('wTemp').textContent = config.temp + '°C';
+  document.getElementById('wCond').textContent = config.cond;
+  document.getElementById('locDisplay').textContent = config.loc;
+  document.getElementById('labelDisplay').textContent = config.label;
+  document.getElementById('tzDisplay').textContent = config.tz === 'Asia/Tokyo' ? 'Japan Time' : config.tz;
+
+  // Sync drawer inputs
+  document.getElementById('tempInput').value = config.temp;
+  document.getElementById('condInput').value = config.cond;
+  document.getElementById('locInput').value = config.loc;
+  document.getElementById('labelInput').value = config.label;
+  document.getElementById('tzInput').value = config.tz;
+  document.getElementById('newsInput').value = config.news.join('\n');
+
+  // Render Ticker
+  const track = document.getElementById('tickerTrack');
+  const groupHtml = config.news.map(item => `<span class="tick-item">${item}</span><span class="tick-sep">◆</span>`).join('');
+  track.innerHTML = `<div class="ticker-group">${groupHtml}</div><div class="ticker-group">${groupHtml}</div>`;
+}
+
+// Live Clock in English
+function updateClock() {
+  const config = loadConfig();
+  const tz = config.tz || 'Asia/Tokyo';
   const now = new Date();
-  const time = now.toLocaleTimeString('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false });
-  let date;
-  const opts = { timeZone: tz };
-  if(state.dateFormat === 'medium') date = now.toLocaleDateString('en-US', { ...opts, day:'2-digit', month:'short', year:'numeric' });
-  else date = now.toLocaleDateString('en-US', { ...opts, month:'short', day:'2-digit', year:'numeric' });
   
-  els.time.textContent = time;
-  els.date.textContent = date;
-  els.dateTop.textContent = (tz === 'Asia/Tokyo') ? 'Japan Time' : tz;
-
-  els.wTemp.textContent = (state.weather?.temp ?? '--') + '°C';
-  els.wCond.textContent = state.weather?.condition || '';
-  
-  els.locationText.textContent = state.location || '';
-  els.newsLabel.textContent = state.newsLabel || 'Aviation News';
-
-  if (els.wIcon.innerHTML.indexOf(state.weather?.icon) === -1) {
-    els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
-  }
-
-  requestAnimationFrame(updateLoop);
-}
-updateLoop();
-
-function buildGroup(list){
-  const g = document.createElement('div');
-  g.className = 'ticker-group';
-  list.forEach(m => {
-    const i = document.createElement('span');
-    i.className = 'tick-item';
-    i.textContent = m;
-    g.appendChild(i);
-    const s = document.createElement('span');
-    s.className = 'tick-sep';
-    s.textContent = '◆'; 
-    g.appendChild(s);
+  document.getElementById('timeDisplay').textContent = now.toLocaleTimeString('en-GB', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
   });
-  return g;
-}
-
-function renderTicker(list){
-  if (!list || list.length === 0) {
-    els.tickerTrack.innerHTML = '<div class="ticker-group"><span class="tick-item" style="color:#94a3b8;">No news available</span></div>';
-    els.tickerTrack.classList.add('paused');
-    return;
-  }
-
-  els.tickerTrack.classList.remove('paused');
-  els.tickerTrack.innerHTML = '';
-  els.tickerTrack.appendChild(buildGroup(list));
-  els.tickerTrack.appendChild(buildGroup(list));
   
-  els.tickerTrack.style.animation = 'none';
-  void els.tickerTrack.offsetWidth;
-  
-  const w = els.tickerTrack.firstElementChild.getBoundingClientRect().width || 500;
-  const speed = Math.max(20, Math.min(120, state.tickerSpeed || 55));
-  const dur = Math.max(15, w / speed);
-  els.tickerTrack.style.animation = `marquee ${dur}s linear infinite`;
-}
-
-function fetchText(url) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const bustUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-    xhr.open('GET', bustUrl, true);
-    xhr.onload = function() {
-      if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
-      else reject(new Error('HTTP Status ' + xhr.status));
-    };
-    xhr.onerror = function() { reject(new Error('Network Error')); };
-    xhr.send();
+  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', {
+    timeZone: tz, month: 'short', day: '2-digit', year: 'numeric'
   });
 }
 
-async function reloadTicker() {
-  const statusEl = document.getElementById('syncStatus');
-  if (statusEl) statusEl.textContent = 'Syncing...';
+setInterval(updateClock, 1000);
+updateClock();
 
-  let list = state.messages || [];
-  let msg = '';
+// Drawer Events
+document.getElementById('panelToggle').addEventListener('click', () => document.getElementById('drawer').classList.add('open'));
+document.getElementById('closeDrawer').addEventListener('click', () => document.getElementById('drawer').classList.remove('open'));
 
-  if (state.sheetUrl) {
-    try {
-      const text = await fetchText(state.sheetUrl);
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-      const out = [];
-      for (const line of lines) {
-        let cell;
-        if (line[0] === '"') {
-          const end = line.indexOf('"', 1);
-          cell = (end > 0 ? line.slice(1, end) : line.slice(1)).replace(/""/g, '"');
-        } else {
-          const c = line.indexOf(',');
-          cell = c >= 0 ? line.slice(0, c) : line;
-        }
-        cell = cell.trim();
-        if (cell) out.push(cell);
-      }
-      if (out.length && /mensagem|message|ticker|info/i.test(out[0])) out.shift();
-      
-      if (out.length > 0) {
-        list = out;
-        msg = 'Success! ' + out.length + ' messages loaded.';
-        if (statusEl) statusEl.style.color = '#16a34a';
-      } else {
-        msg = 'File empty. Using local messages.';
-        if (statusEl) statusEl.style.color = '#f97316';
-      }
-    } catch (e) {
-      msg = 'Error: ' + e.message;
-      if (statusEl) statusEl.style.color = '#ef4444';
-    }
-  } else {
-    msg = 'No URL set. Using local messages.';
-    if (statusEl) statusEl.style.color = '#94a3b8';
-  }
-
-  if (statusEl) statusEl.textContent = msg;
-  renderTicker(list);
-}
-
-function renderAll(){
-  applyBg();
-  reloadTicker();
-}
-
-/* Drawer */
-const drawer = $('drawer'), backdrop = $('drawerBackdrop'), toggle = $('panelToggle');
-function openDrawer(){ drawer.classList.add('open'); backdrop.classList.add('show'); }
-function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('show'); }
-toggle.addEventListener('click', openDrawer);
-$('closeDrawer').addEventListener('click', closeDrawer);
-backdrop.addEventListener('click', closeDrawer);
-
-/* UI Build */
-const wg = $('weatherGrid');
-Object.keys(ICONS).forEach(k => {
-  const b = document.createElement('button');
-  b.dataset.icon = k;
-  b.innerHTML = `<span style="width:22px;height:22px;display:inline-block">${ICONS[k]}</span>${ICON_LABELS[k]}`;
-  b.addEventListener('click', () => {
-    state.weather = state.weather || {};
-    state.weather.icon = k;
-    const map = { clear: 'Clear', partly: 'Partly Cloudy', cloudy: 'Cloudy', rain: 'Rain', thunder: 'Thunderstorm', snow: 'Snow', fog: 'Fog' };
-    if(map[k]) state.weather.condition = map[k];
-    updateAll();
-  });
-  wg.appendChild(b);
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const newConfig = {
+    temp: document.getElementById('tempInput').value,
+    cond: document.getElementById('condInput').value,
+    loc: document.getElementById('locInput').value,
+    label: document.getElementById('labelInput').value,
+    tz: document.getElementById('tzInput').value,
+    news: document.getElementById('newsInput').value.split('\n').map(s => s.trim()).filter(Boolean)
+  };
+  saveConfig(newConfig);
 });
 
-$('bgToggle').querySelectorAll('button').forEach(b => {
-  b.addEventListener('click', () => { state.bg = b.dataset.bg; updateAll(); });
+// Auto-sync across tabs/windows
+window.addEventListener('storage', (e) => {
+  if (e.key === STORAGE_KEY) updateUI();
 });
 
-function bind(id, prop, transform = v => v){
-  const el = $(id);
-  el.addEventListener('input', e => {
-    const v = transform(e.target.value);
-    if(prop.includes('.')){
-      const [a,b] = prop.split('.');
-      state[a] = state[a] || {};
-      state[a][b] = v;
-    } else {
-      state[prop] = v;
-    }
-    updateAll();
-  });
-}
-
-bind('temp','weather.temp', v => Number(v) || 0);
-bind('condition','weather.condition', v => v);
-bind('location','location', v => v);
-bind('newsLabel','newsLabel', v => v);
-bind('sheetUrl','sheetUrl', v => v.trim());
-bind('tickerSpeed','tickerSpeed', v => Number(v));
-
-$('timezone').addEventListener('change', e => { state.timezone = e.target.value; updateAll(); });
-$('dateFormat').addEventListener('change', e => { state.dateFormat = e.target.value; updateAll(); });
-$('messages').addEventListener('input', e => {
-  state.messages = e.target.value.split('\n').map(s => s.trim()).filter(Boolean);
-  updateAll();
-});
-$('resetBtn').addEventListener('click', () => {
-  if(!confirm('Reset all settings?')) return;
-  state = merge(DEFAULTS, {});
-  updateAll();
-});
-
-$('saveBtn').addEventListener('click', () => {
-  updateAll();
-  // Dispara evento customizado para atualizar a página instantaneamente
-  window.dispatchEvent(new Event('local-storage-updated'));
-  const btn = $('saveBtn');
-  btn.textContent = 'Synced ✓';
-  setTimeout(() => btn.textContent = 'Sync Now', 1500);
-});
-
-function updateUI(){
-  $('temp').value = state.weather?.temp ?? 18;
-  $('condition').value = state.weather?.condition ?? 'Partly Cloudy';
-  $('location').value = state.location ?? '';
-  $('newsLabel').value = state.newsLabel ?? '';
-  $('timezone').value = state.timezone ?? 'Asia/Tokyo';
-  $('dateFormat').value = state.dateFormat ?? 'short';
-  $('sheetUrl').value = state.sheetUrl ?? '';
-  $('messages').value = Array.isArray(state.messages) ? state.messages.join('\n') : '';
-  $('tickerSpeed').value = state.tickerSpeed ?? 55;
-  
-  wg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.icon === state.weather?.icon));
-  $('bgToggle').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.bg === state.bg));
-}
-
-function updateAll(){
-  safeSet(state);
-  renderAll();
-  updateUI();
-}
-
-// ===== SINCRONIZAÇÃO AUTOMÁTICA ENTRE JANELAS / APPS =====
-window.addEventListener('storage', (event) => {
-  if (event.key === STORAGE_KEY && event.newValue) {
-    try {
-      const newData = JSON.parse(event.newValue);
-      state = merge(DEFAULTS, newData);
-      updateAll();
-      updateUI();
-    } catch (e) {
-      console.error('Erro ao sincronizar dados do storage:', e);
-    }
-  }
-});
-
-window.addEventListener('local-storage-updated', () => {
-  state = merge(DEFAULTS, safeGet() || {});
-  updateAll();
-  updateUI();
-});
-
-renderAll();
 updateUI();
-setInterval(() => { if(state.sheetUrl) reloadTicker(); }, 120000);
 </script>
 </body>
 </html>
