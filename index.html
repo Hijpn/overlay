@@ -134,7 +134,7 @@
             min-height: 15px;
         }
 
-        /* ================= OVERLAY LOWER THIRD ================= */
+        /* ================= OVERLAY LOWER THIRD (NO GLOW & TRANSPARENT) ================= */
         .overlay-wrapper {
             position: fixed;
             bottom: 28px;
@@ -145,7 +145,6 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.65));
         }
 
         .top-bar {
@@ -155,32 +154,13 @@
             height: 62px;
             padding: 0 28px;
             border-radius: 12px;
-            background: linear-gradient(90deg, rgba(6, 21, 45, 0.95), rgba(13, 43, 89, 0.95) 35%, rgba(16, 52, 107, 0.95) 65%, rgba(6, 21, 45, 0.95));
+            background: rgba(6, 21, 45, 0.55);
             backdrop-filter: blur(8px);
-            border-top: 2px solid #38bdf8;
-            border-bottom: 2px solid #F9A53E;
+            -webkit-backdrop-filter: blur(8px);
+            border-top: 2px solid rgba(56, 189, 248, 0.8);
+            border-bottom: 2px solid rgba(249, 165, 62, 0.85);
             position: relative;
             overflow: hidden;
-        }
-
-        .top-bar::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: 15%;
-            width: 220px;
-            height: 3px;
-            background: radial-gradient(circle, #ffffff 0%, #38bdf8 50%, transparent 100%);
-        }
-
-        .top-bar::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            right: 25%;
-            width: 240px;
-            height: 3px;
-            background: radial-gradient(circle, #ffffff 0%, #F9A53E 50%, transparent 100%);
         }
 
         .weather-section {
@@ -188,6 +168,7 @@
             align-items: center;
             gap: 16px;
             color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
         }
 
         .weather-icon {
@@ -213,7 +194,7 @@
         .weather-desc {
             font-size: 20px;
             font-weight: 500;
-            color: #e2e8f0;
+            color: #f1f5f9;
         }
 
         .time-section {
@@ -221,6 +202,7 @@
             align-items: center;
             gap: 14px;
             color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
         }
 
         .clock-time {
@@ -246,18 +228,18 @@
         .date-label {
             font-size: 13px;
             font-weight: 500;
-            color: #cbd5e1;
+            color: #e2e8f0;
         }
 
-        /* Barra inferior semitransparente */
         .bottom-bar {
             display: flex;
             align-items: center;
             height: 44px;
-            padding: 0 12px 0 24px;
+            padding: 0 24px;
             border-radius: 10px;
-            background: linear-gradient(90deg, rgba(7, 25, 54, 0.85), rgba(11, 36, 76, 0.85) 50%, rgba(7, 25, 54, 0.85));
+            background: rgba(7, 25, 54, 0.50);
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(56, 189, 248, 0.35);
             gap: 18px;
             position: relative;
@@ -271,6 +253,7 @@
             color: #ffffff;
             font-size: 18px;
             font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
         }
 
         .pin-icon {
@@ -280,9 +263,10 @@
             flex-shrink: 0;
         }
 
+        /* Etiqueta AVIATION NEWS sem glow e clicável */
         .news-badge {
             background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-            border: 1px solid #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.75);
             color: #ffffff;
             font-size: 13px;
             font-weight: 800;
@@ -290,7 +274,18 @@
             border-radius: 20px;
             letter-spacing: 0.8px;
             white-space: nowrap;
-            box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+
+        .news-badge:hover {
+            filter: brightness(1.15);
+            transform: scale(1.02);
+        }
+
+        .news-badge.panel-active {
+            border-color: #F9A53E;
         }
 
         .ticker-container {
@@ -305,9 +300,10 @@
         .ticker-text {
             display: inline-block;
             white-space: nowrap;
-            color: #f1f5f9;
+            color: #ffffff;
             font-size: 17px;
             font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
             padding-left: 100%;
             animation: marquee 28s linear infinite;
         }
@@ -316,37 +312,11 @@
             0%   { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
-
-        /* Botão discreto integrado na barra inferior */
-        #discrete-config-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.4);
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-            margin-right: 6px;
-            padding: 0;
-        }
-
-        #discrete-config-btn:hover {
-            background: rgba(249, 165, 62, 0.2);
-            border-color: #F9A53E;
-            color: #F9A53E;
-            box-shadow: 0 0 10px rgba(249, 165, 62, 0.3);
-        }
     </style>
 </head>
 <body>
 
-    <!-- Painel de Controle (começa totalmente escondido) -->
+    <!-- Control Panel (Hidden by default) -->
     <div id="control-panel">
         <div class="panel-header">
             <h3>Sky Stations • Control Panel</h3>
@@ -393,7 +363,7 @@
         <div class="status-text" id="status-msg"></div>
     </div>
 
-    <!-- Overlay Principal -->
+    <!-- Main Overlay -->
     <div class="overlay-wrapper">
         <div class="top-bar">
             <div class="weather-section">
@@ -414,9 +384,6 @@
         </div>
 
         <div class="bottom-bar">
-            <!-- Botão discreto para abrir o painel na barra inferior -->
-            <button id="discrete-config-btn" onclick="togglePanel()" title="Configure Overlay">⚙</button>
-
             <div class="location-box">
                 <svg class="pin-icon" viewBox="0 0 24 24">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -426,7 +393,8 @@
 
             <div class="divider-v" style="height: 22px;"></div>
 
-            <div class="news-badge" id="display-badge">AVIATION NEWS</div>
+            <!-- Click AVIATION NEWS to toggle settings -->
+            <div class="news-badge" id="display-badge" onclick="togglePanel()" title="Click to open/close settings">AVIATION NEWS</div>
 
             <div class="ticker-container">
                 <div class="ticker-text" id="display-news">
@@ -580,18 +548,9 @@
 
         function togglePanel() {
             const panel = document.getElementById('control-panel');
-            const btn = document.getElementById('discrete-config-btn');
+            const badge = document.getElementById('display-badge');
             panel.classList.toggle('show');
-            
-            if (panel.classList.contains('show')) {
-                btn.style.borderColor = "#F9A53E";
-                btn.style.color = "#F9A53E";
-                btn.style.background = "rgba(249, 165, 62, 0.2)";
-            } else {
-                btn.style.borderColor = "rgba(255, 255, 255, 0.15)";
-                btn.style.color = "rgba(255, 255, 255, 0.4)";
-                btn.style.background = "rgba(255, 255, 255, 0.08)";
-            }
+            badge.classList.toggle('panel-active');
         }
 
         function toggleChroma() {
