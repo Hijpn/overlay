@@ -26,27 +26,30 @@
             background-color: #00b140;
         }
 
-        /* ================= CONTROL PANEL ================= */
+        /* ================= CONTROL PANEL (HIDDEN BY DEFAULT) ================= */
         #control-panel {
             position: fixed;
             top: 20px;
             left: 20px;
             width: 400px;
-            background: rgba(13, 27, 42, 0.96);
+            background: rgba(13, 27, 42, 0.98);
             border: 1px solid #3b82f6;
             border-radius: 12px;
             padding: 18px;
             color: #ffffff;
             z-index: 9999;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
             transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        #control-panel.hidden {
             opacity: 0;
             pointer-events: none;
             transform: translateY(-20px);
+        }
+
+        #control-panel.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
         .panel-header {
@@ -131,28 +134,6 @@
             min-height: 15px;
         }
 
-        #reopen-btn {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: rgba(13, 27, 42, 0.5);
-            color: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            z-index: 9998;
-            opacity: 0.4;
-            transition: opacity 0.2s;
-        }
-
-        #reopen-btn:hover {
-            opacity: 1;
-            background: rgba(13, 27, 42, 0.95);
-            color: #fff;
-        }
-
         /* ================= OVERLAY LOWER THIRD ================= */
         .overlay-wrapper {
             position: fixed;
@@ -174,7 +155,8 @@
             height: 62px;
             padding: 0 28px;
             border-radius: 12px;
-            background: linear-gradient(90deg, #06152d 0%, #0d2b59 35%, #10346b 65%, #06152d 100%);
+            background: linear-gradient(90deg, rgba(6, 21, 45, 0.95), rgba(13, 43, 89, 0.95) 35%, rgba(16, 52, 107, 0.95) 65%, rgba(6, 21, 45, 0.95));
+            backdrop-filter: blur(8px);
             border-top: 2px solid #38bdf8;
             border-bottom: 2px solid #F9A53E;
             position: relative;
@@ -267,15 +249,18 @@
             color: #cbd5e1;
         }
 
+        /* Barra inferior semitransparente */
         .bottom-bar {
             display: flex;
             align-items: center;
             height: 44px;
-            padding: 0 24px;
+            padding: 0 12px 0 24px;
             border-radius: 10px;
-            background: linear-gradient(90deg, #071936 0%, #0b244c 50%, #071936 100%);
+            background: linear-gradient(90deg, rgba(7, 25, 54, 0.85), rgba(11, 36, 76, 0.85) 50%, rgba(7, 25, 54, 0.85));
+            backdrop-filter: blur(8px);
             border: 1px solid rgba(56, 189, 248, 0.35);
             gap: 18px;
+            position: relative;
         }
 
         .location-box {
@@ -331,12 +316,37 @@
             0%   { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
+
+        /* Botão discreto integrado na barra inferior */
+        #discrete-config-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.4);
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            margin-right: 6px;
+            padding: 0;
+        }
+
+        #discrete-config-btn:hover {
+            background: rgba(249, 165, 62, 0.2);
+            border-color: #F9A53E;
+            color: #F9A53E;
+            box-shadow: 0 0 10px rgba(249, 165, 62, 0.3);
+        }
     </style>
 </head>
 <body>
 
-    <button id="reopen-btn" onclick="togglePanel()">⚙ Config Panel</button>
-
+    <!-- Painel de Controle (começa totalmente escondido) -->
     <div id="control-panel">
         <div class="panel-header">
             <h3>Sky Stations • Control Panel</h3>
@@ -383,6 +393,7 @@
         <div class="status-text" id="status-msg"></div>
     </div>
 
+    <!-- Overlay Principal -->
     <div class="overlay-wrapper">
         <div class="top-bar">
             <div class="weather-section">
@@ -403,6 +414,9 @@
         </div>
 
         <div class="bottom-bar">
+            <!-- Botão discreto para abrir o painel na barra inferior -->
+            <button id="discrete-config-btn" onclick="togglePanel()" title="Configure Overlay">⚙</button>
+
             <div class="location-box">
                 <svg class="pin-icon" viewBox="0 0 24 24">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -442,7 +456,6 @@
             rain: `<svg viewBox="0 0 64 64" width="42" height="42"><path d="M48 40H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 21 9.5 9.5 0 0 1 48 40z" fill="#cbd5e1"/><g stroke="#38bdf8" stroke-width="3" stroke-linecap="round"><line x1="22" y1="46" x2="19" y2="54"/><line x1="32" y1="46" x2="29" y2="54"/><line x1="42" y1="46" x2="39" y2="54"/></g></svg>`
         };
 
-        // Set default icon immediately
         document.getElementById('weather-icon').innerHTML = icons.partlyCloudy;
 
         function interpretWeatherCode(code) {
@@ -499,7 +512,6 @@
                     activeCoords = { lat, lon };
                 }
 
-                // Primary API: Open-Meteo current endpoint
                 const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`;
                 const weatherRes = await fetch(weatherUrl);
                 if (!weatherRes.ok) throw new Error("Open-Meteo weather failed");
@@ -514,7 +526,6 @@
                 document.getElementById('weather-icon').innerHTML = info.icon;
                 statusEl.innerText = "Updated via Open-Meteo ✔";
             } catch (primaryError) {
-                // Fallback API: wttr.in JSON (No API Key required)
                 try {
                     const fallbackRes = await fetch(`https://wttr.in/${encodeURIComponent(city)}?format=j1`);
                     if (!fallbackRes.ok) throw new Error("Fallback failed");
@@ -568,7 +579,19 @@
         }
 
         function togglePanel() {
-            document.getElementById('control-panel').classList.toggle('hidden');
+            const panel = document.getElementById('control-panel');
+            const btn = document.getElementById('discrete-config-btn');
+            panel.classList.toggle('show');
+            
+            if (panel.classList.contains('show')) {
+                btn.style.borderColor = "#F9A53E";
+                btn.style.color = "#F9A53E";
+                btn.style.background = "rgba(249, 165, 62, 0.2)";
+            } else {
+                btn.style.borderColor = "rgba(255, 255, 255, 0.15)";
+                btn.style.color = "rgba(255, 255, 255, 0.4)";
+                btn.style.background = "rgba(255, 255, 255, 0.08)";
+            }
         }
 
         function toggleChroma() {
