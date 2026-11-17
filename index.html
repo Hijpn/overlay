@@ -77,14 +77,6 @@
   .tick-sep{color:var(--accent-orange);font-size:0.6em;}
   @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  /* PULSO INVISÍVEL PARA FORÇAR O YOLOLIV A REDESENHAR */
-  @keyframes forceRedraw {
-    0% { opacity: 0.999; }
-    50% { opacity: 1; }
-    100% { opacity: 0.999; }
-  }
-  .bar { animation: forceRedraw 1s infinite; }
-
   /* ===== PANEL TOGGLE ===== */
   .panel-toggle{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:12px;
     width:44px;height:44px;border-radius:12px;border:1px solid var(--border);
@@ -165,7 +157,7 @@
     <section>
       <h2>Preview Background</h2>
       <div class="bg-toggle" id="bgToggle">
-        <button data-bg="transparent">Transparent (OBS/Yololiv)</button>
+        <button data-bg="transparent">Transparent</button>
         <button data-bg="black">Black</button>
         <button data-bg="preview">Preview</button>
       </div>
@@ -310,6 +302,7 @@ function merge(b,o){ return { ...b, ...o, weather:{ ...b.weather, ...(o?.weather
 
 let state = merge(DEFAULTS, safeGet() || {});
 
+// ===== LÊ OS DADOS DIRETO DA URL (PARA O YOLOLIV) =====
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('bg')) state.bg = urlParams.get('bg');
 if (urlParams.get('clean') === '1') {
@@ -317,6 +310,10 @@ if (urlParams.get('clean') === '1') {
     document.getElementById('panelToggle')?.classList.add('force-hide');
   });
 }
+if (urlParams.has('temp')) state.weather.temp = Number(urlParams.get('temp'));
+if (urlParams.has('cond')) state.weather.condition = urlParams.get('cond');
+if (urlParams.has('loc')) state.location = urlParams.get('loc');
+if (urlParams.has('label')) state.newsLabel = urlParams.get('label');
 
 const $ = id => document.getElementById(id);
 const els = {
@@ -333,22 +330,12 @@ function applyBg(){
   else if(state.bg === 'preview') document.body.classList.add('preview');
 }
 
-function renderWeather(){
-  els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
-  els.wTemp.textContent = (state.weather?.temp ?? '--') + '°C';
-  els.wCond.textContent = state.weather?.condition || '';
-}
-
-function renderStatic(){
-  els.locationText.textContent = state.location || '';
-  els.newsLabel.textContent = state.newsLabel || 'Aviation News';
-}
-
-function renderClock(){
+// ===== LOOP CONTÍNUO FORÇANDO O YOLOLIV A REDESENHAR =====
+function updateLoop() {
+  // Relógio
   const tz = state.timezone || 'Asia/Tokyo';
   const now = new Date();
   const time = now.toLocaleTimeString('en-GB', { timeZone: tz, hour:'2-digit', minute:'2-digit', hour12:false });
-  
   let date;
   const opts = { timeZone: tz };
   if(state.dateFormat === 'medium') date = now.toLocaleDateString('en-US', { ...opts, day:'2-digit', month:'short', year:'numeric' });
@@ -357,15 +344,23 @@ function renderClock(){
   els.time.textContent = time;
   els.date.textContent = date;
   els.dateTop.textContent = (tz === 'Asia/Tokyo') ? 'Japan Time' : tz;
-}
 
-// LOOP DE ANIMAÇÃO FORÇADO (Para driblar o bloqueio do Yololiv)
-let lastTime = '';
-function clockLoop() {
-  renderClock();
-  requestAnimationFrame(clockLoop);
+  // Temperatura e Clima (forçando atualização)
+  els.wTemp.textContent = (state.weather?.temp ?? '--') + '°C';
+  els.wCond.textContent = state.weather?.condition || '';
+  
+  // Aeroporto e Label
+  els.locationText.textContent = state.location || '';
+  els.newsLabel.textContent = state.newsLabel || 'Aviation News';
+
+  // Ícone (só atualiza se mudou para não travar o render)
+  if (els.wIcon.innerHTML.indexOf(state.weather?.icon) === -1) {
+    els.wIcon.innerHTML = ICONS[state.weather?.icon] || ICONS.partly;
+  }
+
+  requestAnimationFrame(updateLoop);
 }
-clockLoop();
+updateLoop();
 
 function buildGroup(list){
   const g = document.createElement('div');
@@ -407,14 +402,13 @@ function renderTicker(list){
 function fetchText(url) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    // Adiciona o "cache buster" para o Yololiv não pegar dados velhos da memória
     const bustUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
     xhr.open('GET', bustUrl, true);
     xhr.onload = function() {
       if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
       else reject(new Error('HTTP Status ' + xhr.status));
     };
-    xhr.onerror = function() { reject(new Error('Network Error (CORS or invalid URL)')); };
+    xhr.onerror = function() { reject(new Error('Network Error')); };
     xhr.send();
   });
 }
@@ -443,7 +437,6 @@ async function reloadTicker() {
         cell = cell.trim();
         if (cell) out.push(cell);
       }
-      
       if (out.length && /mensagem|message|ticker|info/i.test(out[0])) out.shift();
       
       if (out.length > 0) {
@@ -451,16 +444,15 @@ async function reloadTicker() {
         msg = 'Success! ' + out.length + ' messages loaded.';
         if (statusEl) statusEl.style.color = '#16a34a';
       } else {
-        msg = 'File is empty. Using local messages.';
+        msg = 'File empty. Using local messages.';
         if (statusEl) statusEl.style.color = '#f97316';
       }
     } catch (e) {
-      console.warn('[Sky Stations] loading failed:', e);
-      msg = 'Error: ' + e.message + '. Using local messages.';
+      msg = 'Error: ' + e.message;
       if (statusEl) statusEl.style.color = '#ef4444';
     }
   } else {
-    msg = 'No external URL set. Using local messages.';
+    msg = 'No URL set. Using local messages.';
     if (statusEl) statusEl.style.color = '#94a3b8';
   }
 
@@ -470,8 +462,6 @@ async function reloadTicker() {
 
 function renderAll(){
   applyBg();
-  renderWeather();
-  renderStatic();
   reloadTicker();
 }
 
@@ -568,12 +558,6 @@ function updateAll(){
 renderAll();
 updateUI();
 setInterval(() => { if(state.sheetUrl) reloadTicker(); }, 120000);
-
-// Força atualização quando a tela volta ao foco no Yololiv
-window.addEventListener('focus', () => { if(state.sheetUrl) reloadTicker(); });
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.sheetUrl) reloadTicker();
-});
 </script>
 </body>
 </html>
