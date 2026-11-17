@@ -83,9 +83,11 @@
     background:rgba(10,15,26,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     color:var(--text);font-size:20px;cursor:pointer;z-index:100;
     display:flex;align-items:center;justify-content:center;
-    opacity:0.8; transition:opacity 0.2s;}
+    opacity:0.15; transition:opacity 0.2s;}
   .panel-toggle:hover,.panel-toggle:active{opacity:1}
-  .panel-toggle.hidden { display: none !important; }
+  
+  /* Classe para esconder o botão manualmente com a tecla H */
+  .panel-toggle.force-hide { display: none !important; }
 
   /* ===== DRAWER ===== */
   .drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);
@@ -162,7 +164,7 @@
         <button data-bg="black">Black</button>
         <button data-bg="preview">Preview</button>
       </div>
-      <p class="hint">In "Transparent" mode, the settings button (⚙) hides automatically.<br>Press <b>H</b> to toggle the button visibility manually.</p>
+      <p class="hint">In "Transparent" mode the background is clean for OBS.<br>Press <b>H</b> on your keyboard to hide/show the ⚙ button.</p>
     </section>
 
     <!-- WEATHER -->
@@ -332,23 +334,13 @@ function applyBg(){
   if(state.bg === 'green') document.body.classList.add('bg-green');
   else if(state.bg === 'black') document.body.classList.add('bg-black');
   else if(state.bg === 'preview') document.body.classList.add('preview');
-  
-  // Lógica para esconder o botão ⚙ no modo Transparente (OBS)
-  const toggleBtn = document.getElementById('panelToggle');
-  if (toggleBtn) {
-    if (state.bg === 'transparent') {
-      toggleBtn.classList.add('hidden');
-    } else {
-      toggleBtn.classList.remove('hidden');
-    }
-  }
 }
 
-// Atalho de teclado (H) para esconder/mostrar o botão no navegador
+// Atalho de teclado (H) para esconder/mostrar o botão manualmente
 document.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() === 'h') {
     const toggleBtn = document.getElementById('panelToggle');
-    if (toggleBtn) toggleBtn.classList.toggle('hidden');
+    if (toggleBtn) toggleBtn.classList.toggle('force-hide');
   }
 });
 
