@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta http-equiv="refresh" content="60">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Sky Stations - Live Overlay</title>
@@ -106,14 +105,17 @@
     <button id="closeDrawer" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;">✕</button>
   </header>
   <div>
-    <label>Temperature (°C)</label>
-    <input type="number" id="tempInput" value="18">
+    <label>City Name (Auto Weather)</label>
+    <input type="text" id="cityInput" placeholder="e.g. Tokyo, Nagoya, London">
     
-    <label>Weather Condition</label>
-    <input type="text" id="condInput" value="Partly Cloudy">
+    <label>Manual Override Temperature (°C)</label>
+    <input type="number" id="tempInput">
     
-    <label>Airport / Location</label>
-    <input type="text" id="locInput" value="Nagoya Area (Komaki)">
+    <label>Manual Override Condition</label>
+    <input type="text" id="condInput">
+    
+    <label>Airport / Location Display</label>
+    <input type="text" id="locInput">
 
     <label>News Badge Label</label>
     <input type="text" id="labelInput" value="Aviation News">
@@ -122,12 +124,12 @@
     <select id="tzInput">
       <option value="Asia/Tokyo">Tokyo (Japan Time)</option>
       <option value="Asia/Seoul">Seoul</option>
+      <option value="Asia/Shanghai">Shanghai</option>
       <option value="UTC">UTC</option>
     </select>
     
     <label>Ticker Messages (one per line)</label>
-    <textarea id="newsInput" rows="5">JAL to increase international flights in 2027
-Winds calm, visibility 10 km</textarea>
+    <textarea id="newsInput" rows="5"></textarea>
     
     <button class="btn-save" id="saveBtn">Save &amp; Sync Now</button>
   </div>
@@ -175,11 +177,22 @@ if (!urlParams.has('t')) {
   window.location.search = '?t=' + Date.now();
 }
 
-const STORAGE_KEY = 'sky_stations_config_en_v1';
+const STORAGE_KEY = 'sky_stations_config_api_v1';
+
+const ICONS = {
+  clear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+  partly:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>`,
+  cloudy:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
+  rain:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>`,
+  thunder:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`,
+  snow:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M8 15h.01"/><path d="M8 19h.01"/><path d="M12 17h.01"/><path d="M12 21h.01"/><path d="M16 15h.01"/><path d="M16 19h.01"/></svg>`,
+  fog:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 17H7"/><path d="M17 21H9"/></svg>`
+};
 
 function loadConfig() {
   const data = localStorage.getItem(STORAGE_KEY);
   const defaults = {
+    city: '',
     temp: 18,
     cond: 'Partly Cloudy',
     loc: 'Nagoya Area (Komaki)',
@@ -190,35 +203,81 @@ function loadConfig() {
       'Winds calm, visibility 10 km'
     ]
   };
-  
-  const saved = data ? JSON.parse(data) : defaults;
-
-  // Allow URL overrides (e.g., ?temp=20&loc=Centrair)
-  if (urlParams.has('temp')) saved.temp = urlParams.get('temp');
-  if (urlParams.has('cond')) saved.cond = urlParams.get('cond');
-  if (urlParams.has('loc')) saved.loc = urlParams.get('loc');
-  if (urlParams.has('label')) saved.label = urlParams.get('label');
-
-  return saved;
+  return data ? JSON.parse(data) : defaults;
 }
 
 function saveConfig(config) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  // Update URL timestamp to force streaming WebViews to reload cleanly
   const currentParams = new URLSearchParams(window.location.search);
   currentParams.set('t', Date.now());
   window.location.search = currentParams.toString();
 }
 
-function updateUI() {
+async function fetchWeather(cityName) {
+  if (!cityName) return null;
+  try {
+    // 1. Get coordinates from city name
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1`);
+    const geoData = await geoRes.json();
+    if (!geoData.results || geoData.results.length === 0) throw new Error("City not found");
+    
+    const { latitude, longitude } = geoData.results[0];
+    
+    // 2. Get current weather
+    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
+    const wData = await weatherRes.json();
+    
+    return {
+      temp: Math.round(wData.current.temperature_2m),
+      conditionCode: wData.current.weather_code
+    };
+  } catch (error) {
+    console.error("Weather fetch failed:", error);
+    return null;
+  }
+}
+
+function getWeatherDetails(code) {
+  // WMO Weather interpretation codes
+  if (code === 0) return { text: "Clear Sky", icon: ICONS.clear };
+  if ([1, 2, 3].includes(code)) return { text: "Partly Cloudy", icon: ICONS.partly };
+  if ([45, 48].includes(code)) return { text: "Fog", icon: ICONS.fog };
+  if ([51, 53, 55, 56, 57].includes(code)) return { text: "Drizzle", icon: ICONS.rain };
+  if ([61, 63, 65, 66, 67].includes(code)) return { text: "Rain", icon: ICONS.rain };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { text: "Snow", icon: ICONS.snow };
+  if ([80, 81, 82].includes(code)) return { text: "Rain Showers", icon: ICONS.rain };
+  if ([95, 96, 99].includes(code)) return { text: "Thunderstorm", icon: ICONS.thunder };
+  return { text: "Cloudy", icon: ICONS.cloudy };
+}
+
+async function updateUI() {
   const config = loadConfig();
-  document.getElementById('wTemp').textContent = config.temp + '°C';
-  document.getElementById('wCond').textContent = config.cond;
+  
+  let displayTemp = config.temp;
+  let displayCond = config.cond;
+  let displayIcon = ICONS.partly;
+
+  // Attempt auto-fetch if city is provided
+  if (config.city) {
+    const liveWeather = await fetchWeather(config.city);
+    if (liveWeather) {
+      displayTemp = liveWeather.temp;
+      const details = getWeatherDetails(liveWeather.conditioncode ?? liveWeather.weather_code);
+      displayCond = details.text;
+      displayIcon = details.icon;
+    }
+  }
+
+  document.getElementById('wTemp').textContent = displayTemp + '°C';
+  document.getElementById('wCond').textContent = displayCond;
+  document.getElementById('wIcon').innerHTML = displayIcon;
+  
   document.getElementById('locDisplay').textContent = config.loc;
   document.getElementById('labelDisplay').textContent = config.label;
   document.getElementById('tzDisplay').textContent = config.tz === 'Asia/Tokyo' ? 'Japan Time' : config.tz;
 
   // Sync drawer inputs
+  document.getElementById('cityInput').value = config.city;
   document.getElementById('tempInput').value = config.temp;
   document.getElementById('condInput').value = config.cond;
   document.getElementById('locInput').value = config.loc;
@@ -256,8 +315,9 @@ document.getElementById('closeDrawer').addEventListener('click', () => document.
 
 document.getElementById('saveBtn').addEventListener('click', () => {
   const newConfig = {
-    temp: document.getElementById('tempInput').value,
-    cond: document.getElementById('condInput').value,
+    city: document.getElementById('cityInput').value.trim(),
+    temp: document.getElementById('tempInput').value || 18,
+    cond: document.getElementById('condInput').value || 'Partly Cloudy',
     loc: document.getElementById('locInput').value,
     label: document.getElementById('labelInput').value,
     tz: document.getElementById('tzInput').value,
