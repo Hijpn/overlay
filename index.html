@@ -868,6 +868,11 @@
 
         setInterval(updateJapanClock, 1000);
         setInterval(() => fetchWeather(currentCity, activeCoords), 600000);
+        // Inicializa a conexão com Firebase
+const firebaseConfig = {
+    databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
+};
+// Aqui seu código pode ler ou enviar dados em tempo real!
     </script>
 </body>
 </html>
