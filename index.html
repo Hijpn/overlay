@@ -187,6 +187,8 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            transform-origin: bottom center;
+            transition: transform 0.2s ease;
         }
 
         .top-bar {
@@ -504,9 +506,16 @@
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Ticker Scroll Speed <span id="speed-val">28s</span></label>
-            <input type="range" id="input-speed" min="10" max="60" value="28" oninput="updateTickerSpeed()">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Ticker Scroll Speed <span id="speed-val">28s</span></label>
+                <input type="range" id="input-speed" min="10" max="60" value="28" oninput="updateTickerSpeed()">
+            </div>
+
+            <div class="form-group">
+                <label>Overlay Scale / Size <span id="scale-val">100%</span></label>
+                <input type="range" id="input-scale" min="70" max="160" value="100" oninput="updateOverlayScale()">
+            </div>
         </div>
 
         <div class="form-group">
@@ -703,6 +712,15 @@
             startFlipCycle();
         }
 
+        function updateOverlayScale() {
+            const scaleVal = document.getElementById('input-scale').value;
+            document.getElementById('scale-val').innerText = `${scaleVal}%`;
+            const wrapper = document.querySelector('.overlay-wrapper');
+            if (wrapper) {
+                wrapper.style.transform = `translateX(-50%) scale(${scaleVal / 100})`;
+            }
+        }
+
         function interpretWeatherCode(code) {
             if (code === 0) return { label: "Clear Sky", icon: weatherIcons.clear };
             if (code === 1 || code === 2) return { label: "Partly Cloudy", icon: weatherIcons.partlyCloudy };
@@ -869,12 +887,14 @@
             document.getElementById('input-badge').value = settings.badgeText;
             document.getElementById('input-flip-speed').value = settings.flipSpeed;
             document.getElementById('input-speed').value = settings.tickerSpeed;
+            document.getElementById('input-scale').value = settings.scale || 100;
             document.getElementById('input-news').value = settings.newsText;
 
             applyTheme();
             updateLiveIcon();
             updateFlipSpeed();
             updateTickerSpeed();
+            updateOverlayScale();
 
             currentCity = settings.city;
             const coords = presets[settings.preset] ? { lat: presets[settings.preset].lat, lon: presets[settings.preset].lon } : null;
@@ -892,6 +912,7 @@
                 badgeText: document.getElementById('input-badge').value.trim() || "AVIATION NEWS",
                 flipSpeed: document.getElementById('input-flip-speed').value,
                 tickerSpeed: document.getElementById('input-speed').value,
+                scale: document.getElementById('input-scale').value,
                 newsText: document.getElementById('input-news').value.trim(),
                 updatedAt: new Date().toISOString()
             };
