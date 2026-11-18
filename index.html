@@ -365,12 +365,26 @@
             white-space: nowrap;
         }
 
+        .callsign-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
         .callsign-text {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             letter-spacing: 0.5px;
             line-height: 1.1;
             color: #F9A53E;
+        }
+
+        .airline-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .route-text {
@@ -482,7 +496,7 @@
         <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol via Proxy)</span>
+                <span>Live Radar (adsb.lol Multi-Proxy)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div id="radar-map"></div>
@@ -559,9 +573,12 @@
                     <img id="display-flag-img" src="https://flagcdn.com/w80/jp.png" alt="Country Flag" onerror="this.src='https://flagcdn.com/w80/un.png'">
                 </div>
                 <div class="flight-main-info">
-                    <span class="callsign-text" id="display-callsign">JAL921</span>
+                    <div class="callsign-row">
+                        <span class="callsign-text" id="display-callsign">JAL921</span>
+                        <span class="airline-name" id="display-airline">Japan Airlines</span>
+                    </div>
                     <div class="route-text">
-                        <span id="display-route">HND <span class="route-arrow">&rarr;</span> ITM</span>
+                        <span id="display-route">Tokyo <span class="route-arrow">&rarr;</span> Osaka</span>
                     </div>
                 </div>
                 <div class="aircraft-model" id="display-aircraft">Boeing 787-8</div>
@@ -594,30 +611,60 @@
             databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         };
 
+        // Dicionário de Companhias Aéreas por Prefixo ICAO/IATA
+        const AIRLINE_CODE_MAP = {
+            "JAL": "Japan Airlines", "JNA": "Japan Transocean Air", "J-AIR": "J-Air",
+            "ANA": "All Nippon Airways", "ADO": "Air Do", "SNJ": "Skymid Air",
+            "SKY": "Skymark Airlines", "APJ": "Peach Aviation", "SFJ": "StarFlyer",
+            "ADO": "Air Do", "IBX": "I-Bex Airlines", "FDA": "Fuji Dream Airlines",
+            "ORC": "Oriental Air Bridge", "JAC": "Japan Air Commuter", "RAC": "Ryukyu Air Commuter",
+            "JET": "Jetstar Japan", "AXT": "Spring Airlines Japan", "VOZ": "Volaris",
+            "CPA": "Cathay Pacific", "KAL": "Korean Air", "AAR": "Asiana Airlines",
+            "JAL": "Japan Airlines", "ANA": "All Nippon Airways", "SIA": "Singapore Airlines",
+            "CHH": "Hainan Airlines", "CCA": "Air China", "CSN": "China Southern",
+            "CES": "China Eastern", "EVA": "EVA Air", "CAL": "China Airlines",
+            "THA": "Thai Airways", "MAS": "Malaysia Airlines", "VNA": "Vietnam Airlines",
+            "JST": "Jetstar", "QFA": "Qantas", "UAL": "United Airlines", "DAL": "Delta Air Lines",
+            "AAL": "American Airlines", "SWA": "Southwest Airlines", "BAW": "British Airways",
+            "AFR": "Air France", "DLH": "Lufthansa", "UAE": "Emirates", "QTR": "Qatar Airways"
+        };
+
+        function getAirlineName(callsign) {
+            if (!callsign) return "";
+            const clean = callsign.trim().toUpperCase();
+            // Pega as primeiras letras antes dos números (ex: JAL921 -> JAL)
+            const match = clean.match(/^[A-Z]+/);
+            if (match) {
+                const prefix = match[0];
+                return AIRLINE_CODE_MAP[prefix] || prefix;
+            }
+            return "";
+        }
+
+        // Dicionário de Aeroportos
         const AIRPORT_CODE_MAP = {
             "HND": "Tokyo", "NRT": "Tokyo", "KIX": "Osaka", "ITM": "Osaka",
-            "NGO": "Nagoya", "CTS": "Sapporo", "FUK": "Fukuoka", "OKA": "Okinawa",
-            "KOJ": "Kagoshima", "KMJ": "Kumamoto", "NGA": "Niigata", "SDJ": "Sendai",
-            "TAK": "Takamatsu", "KIJ": "Niigata", "KKJ": "Kitakyushu", "FSZ": "Shizuoka",
-            "AOJ": "Aomori", "HKD": "Hakodate", "IBR": "Ibaraki", "MYJ": "Matsuyama",
-            "OIT": "Oita", "UBJ": "Ube", "MZV": "Matsumoto"
+            "NGO": "Nagoya", "NKM": "Nagoya", "CTS": "Sapporo", "FUK": "Fukuoka",
+            "OKA": "Okinawa", "KOJ": "Kagoshima", "SDJ": "Sendai", "ICN": "Seoul",
+            "TPE": "Taipei", "HKG": "Hong Kong", "SIN": "Singapore", "LAX": "Los Angeles",
+            "RJTT": "Tokyo", "RJAA": "Tokyo", "RJBB": "Osaka", "RJOO": "Osaka",
+            "RJGG": "Nagoya", "RJNA": "Nagoya", "RJCC": "Sapporo", "RJFF": "Fukuoka"
         };
 
         function getCityName(code) {
+            if (!code) return "";
             const cleanCode = code.trim().toUpperCase();
             return AIRPORT_CODE_MAP[cleanCode] || cleanCode;
         }
 
         function formatRouteWithCities(routeString) {
-            if (!routeString || !routeString.includes('→')) {
-                return routeString || "N/A → N/A";
-            }
-            const parts = routeString.split('→').map(s => s.trim());
-            const origCode = parts[0];
-            const destCode = parts.length > 1 ? parts[1] : "";
-            
-            const origCity = getCityName(origCode);
-            const destCity = getCityName(destCode);
+            if (!routeString) return "N/A → N/A";
+            const separator = routeString.includes('→') ? '→' : (routeString.includes('-') ? '-' : null);
+            if (!separator) return routeString;
+
+            const parts = routeString.split(separator).map(s => s.trim());
+            const origCity = getCityName(parts[0]);
+            const destCity = parts.length > 1 ? getCityName(parts[1]) : "";
 
             return `${origCity} → ${destCity}`;
         }
@@ -646,10 +693,31 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MINI RADAR MAP (ADSB.LOL VIA PROXY) =================
+        // ================= MULTI-PROXY FETCH HELPER =================
+        async function fetchWithFallback(targetUrl) {
+            const cacheBuster = `_t=${Date.now()}`;
+            const urlWithBust = targetUrl.includes('?') ? `${targetUrl}&${cacheBuster}` : `${targetUrl}?${cacheBuster}`;
+
+            try {
+                const res = await fetch(urlWithBust);
+                if (res.ok) return await res.json();
+            } catch (e) {}
+
+            try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithBust)}`);
+                if (res.ok) return await res.json();
+            } catch (e) {}
+
+            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlWithBust)}`);
+            if (!res.ok) throw new Error("All proxies failed");
+            const wrapped = await res.json();
+            return JSON.parse(wrapped.contents);
+        }
+
+        // ================= MINI RADAR MAP =================
         let map = null;
         let aircraftLayer = null;
-        let currentLat = 35.1815; // Default Nagoya
+        let currentLat = 35.1815;
         let currentLon = 136.9066;
 
         function initRadarMap() {
@@ -681,12 +749,43 @@
                 if (r.startsWith("F-")) return "FR";
                 if (r.startsWith("D-")) return "DE";
                 if (r.startsWith("C-")) return "CA";
-                if (r.startsWith("9V")) return "SG";
-                if (r.startsWith("HS")) return "TH";
-                if (r.startsWith("RP")) return "PH";
-                if (r.startsWith("VN")) return "VN";
             }
             return "JP";
+        }
+
+        async function lookupFlightRoute(callsign, lat, lon) {
+            if (!callsign || callsign === "N/A") return null;
+            const cleanCallsign = callsign.trim().toUpperCase();
+
+            try {
+                const routeEndpoint = "https://api.adsb.lol/api/0/routeset";
+                const bodyPayload = JSON.stringify({
+                    planes: [{ callsign: cleanCallsign, lat: lat, lng: lon }]
+                });
+
+                let res;
+                try {
+                    res = await fetch(routeEndpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: bodyPayload
+                    });
+                } catch (e) {
+                    res = await fetch(`https://corsproxy.io/?${encodeURIComponent(routeEndpoint)}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: bodyPayload
+                    });
+                }
+
+                if (res && res.ok) {
+                    const routeData = await res.json();
+                    if (Array.isArray(routeData) && routeData.length > 0 && routeData[0]._airport_codes_iata) {
+                        return routeData[0]._airport_codes_iata.replace('-', ' → ');
+                    }
+                }
+            } catch (err) {}
+            return null;
         }
 
         async function refreshRadarFlights() {
@@ -697,19 +796,12 @@
             statusEl.innerText = "Scanning live aircraft from adsb.lol...";
 
             try {
-                // Usando proxy CORS gratuito para contornar o bloqueio do navegador no GitHub Pages
                 const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
-                const res = await fetch(proxyUrl);
-                if (!res.ok) throw new Error("Network response was not ok");
-                
-                const wrappedData = await res.json();
-                const data = JSON.parse(wrappedData.contents);
+                const data = await fetchWithFallback(targetUrl);
 
                 aircraftLayer.clearLayers();
 
-                if (!data.ac || data.ac.length === 0) {
+                if (!data || !data.ac || data.ac.length === 0) {
                     statusEl.innerText = "No aircraft detected in this area.";
                     return;
                 }
@@ -733,23 +825,31 @@
                         const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
                         marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
 
-                        marker.on('click', () => {
+                        marker.on('click', async () => {
                             const country = deriveCountryFromReg(reg);
                             document.getElementById('input-callsign').value = callsign;
                             document.getElementById('input-aircraft').value = model;
                             document.getElementById('input-country').value = country;
-                            document.getElementById('input-route').value = "HND → ITM";
-                            statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
+                            document.getElementById('input-route').value = "Searching route...";
+                            statusEl.innerText = `Fetching route for ${callsign}...`;
+
+                            const detectedRoute = await lookupFlightRoute(callsign, ac.lat, ac.lon);
+                            if (detectedRoute) {
+                                document.getElementById('input-route').value = detectedRoute;
+                                statusEl.innerText = `Selected ${callsign} (${detectedRoute}). Click Update & Sync!`;
+                            } else {
+                                document.getElementById('input-route').value = "";
+                                statusEl.innerText = `Selected ${callsign}. Route not found — type manually (ex: HND → ITM).`;
+                            }
                         });
 
                         marker.addTo(aircraftLayer);
                     }
                 });
 
-                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
+                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane.`;
             } catch (err) {
-                console.error("Radar fetch error:", err);
-                statusEl.innerText = "Radar error: Failed to fetch via proxy.";
+                statusEl.innerText = "Radar error: Network busy. Click Scan Area to retry.";
             }
         }
 
@@ -832,7 +932,6 @@
 
                 statusEl.innerText = `Weather updated for ${name}.`;
             } catch (err) {
-                console.error("Weather fetch error:", err);
                 statusEl.innerText = "Failed to fetch weather data.";
             }
         }
@@ -841,10 +940,11 @@
         function pushSettingsToFirebase() {
             const cityVal = document.getElementById('input-city').value.trim() || "Nagoya";
             const rawRoute = document.getElementById('input-route').value.trim() || "N/A → N/A";
+            const callsignVal = document.getElementById('input-callsign').value.trim() || "N/A";
             
             const payload = {
                 city: cityVal,
-                callsign: document.getElementById('input-callsign').value.trim() || "N/A",
+                callsign: callsignVal,
                 route: rawRoute,
                 country: document.getElementById('input-country').value.trim() || "JP",
                 aircraft: document.getElementById('input-aircraft').value.trim() || "N/A",
@@ -891,6 +991,7 @@
             if (data.callsign) {
                 document.getElementById('input-callsign').value = data.callsign;
                 document.getElementById('display-callsign').innerText = data.callsign;
+                document.getElementById('display-airline').innerText = getAirlineName(data.callsign);
             }
 
             if (data.route) {
