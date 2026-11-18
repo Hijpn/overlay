@@ -160,7 +160,7 @@
 
         #radar-map {
             width: 100%;
-            height: 175px;
+            height: 165px;
             z-index: 1;
         }
 
@@ -482,7 +482,7 @@
         <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (250nm Radius)</span>
+                <span>Live Radar (adsb.lol via Proxy)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div id="radar-map"></div>
@@ -646,7 +646,7 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MINI RADAR MAP =================
+        // ================= MINI RADAR MAP (ADSB.LOL VIA PROXY) =================
         let map = null;
         let aircraftLayer = null;
         let currentLat = 35.1815; // Default Nagoya
@@ -655,7 +655,7 @@
         function initRadarMap() {
             map = L.map('radar-map', {
                 center: [currentLat, currentLon],
-                zoom: 7,
+                zoom: 8,
                 zoomControl: true,
                 attributionControl: false
             });
@@ -669,19 +669,23 @@
             refreshRadarFlights();
         }
 
-        function deriveCountryFromText(text) {
-            if (!text) return "JP";
-            const t = text.toUpperCase();
-            if (t.startsWith("JA") || t.includes("JAPAN")) return "JP";
-            if (t.startsWith("N") || t.includes("STATES")) return "US";
-            if (t.startsWith("B-") || t.includes("CHINA")) return "CN";
-            if (t.startsWith("HL") || t.includes("KOREA")) return "KR";
-            if (t.startsWith("VH") || t.includes("AUSTRALIA")) return "AU";
-            if (t.startsWith("G-") || t.includes("KINGDOM")) return "GB";
-            if (t.startsWith("F-") || t.includes("FRANCE")) return "FR";
-            if (t.startsWith("D-") || t.includes("GERMANY")) return "DE";
-            if (t.startsWith("9V") || t.includes("SINGAPORE")) return "SG";
-            if (t.startsWith("HS") || t.includes("THAILAND")) return "TH";
+        function deriveCountryFromReg(reg) {
+            if (reg) {
+                const r = reg.toUpperCase();
+                if (r.startsWith("JA")) return "JP";
+                if (r.startsWith("N")) return "US";
+                if (r.startsWith("B-")) return "CN";
+                if (r.startsWith("HL")) return "KR";
+                if (r.startsWith("VH")) return "AU";
+                if (r.startsWith("G-")) return "GB";
+                if (r.startsWith("F-")) return "FR";
+                if (r.startsWith("D-")) return "DE";
+                if (r.startsWith("C-")) return "CA";
+                if (r.startsWith("9V")) return "SG";
+                if (r.startsWith("HS")) return "TH";
+                if (r.startsWith("RP")) return "PH";
+                if (r.startsWith("VN")) return "VN";
+            }
             return "JP";
         }
 
@@ -690,96 +694,63 @@
             if (!map) return;
 
             const center = map.getCenter();
-            const lat = center.lat;
-            const lon = center.lng;
+            statusEl.innerText = "Scanning live aircraft from adsb.lol...";
 
-            statusEl.innerText = "Scanning live aircraft...";
-            let planes = [];
-            let sourceName = "";
-
-            // 1. Tenta adsb.lol via CodeTabs proxy (evita erro de CORS sem gerar 22 erros)
             try {
-                const targetUrl = `https://api.adsb.lol/v2/lat/${lat.toFixed(4)}/lon/${lon.toFixed(4)}/dist/250`;
-                const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+                // Usando proxy CORS gratuito para contornar o bloqueio do navegador no GitHub Pages
+                const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                
                 const res = await fetch(proxyUrl);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && Array.isArray(data.ac)) {
-                        planes = data.ac.filter(ac => ac.lat && ac.lon).map(ac => ({
-                            lat: ac.lat,
-                            lon: ac.lon,
-                            callsign: (ac.flight || ac.r || ac.hex || "N/A").trim(),
-                            model: ac.t || "N/A",
-                            track: ac.track || 0,
-                            countryHint: ac.r || ""
-                        }));
-                        sourceName = "adsb.lol";
-                    }
+                if (!res.ok) throw new Error("Network response was not ok");
+                
+                const wrappedData = await res.json();
+                const data = JSON.parse(wrappedData.contents);
+
+                aircraftLayer.clearLayers();
+
+                if (!data.ac || data.ac.length === 0) {
+                    statusEl.innerText = "No aircraft detected in this area.";
+                    return;
                 }
-            } catch (e) {
-                // Silencia erro e passa para o fallback
-            }
 
-            // 2. Fallback direto para OpenSky Network (suporta CORS nativo no navegador)
-            if (!sourceName) {
-                try {
-                    const url = `https://opensky-network.org/api/states/all?lamin=${(lat - 2.5).toFixed(2)}&lomin=${(lon - 2.5).toFixed(2)}&lamax=${(lat + 2.5).toFixed(2)}&lomax=${(lon + 2.5).toFixed(2)}`;
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && Array.isArray(data.states)) {
-                            planes = data.states
-                                .filter(s => s[5] && s[6])
-                                .map(s => ({
-                                    lat: s[6],
-                                    lon: s[5],
-                                    callsign: (s[1] || s[0] || "N/A").trim(),
-                                    model: "Aircraft",
-                                    track: s[10] || 0,
-                                    countryHint: s[2] || ""
-                                }));
-                            sourceName = "OpenSky";
-                        }
+                let count = 0;
+                data.ac.forEach(ac => {
+                    if (ac.lat && ac.lon) {
+                        count++;
+                        const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim();
+                        const model = ac.t || "N/A";
+                        const reg = ac.r || "";
+                        const track = ac.track || 0;
+
+                        const planeIcon = L.divIcon({
+                            className: 'custom-plane-icon',
+                            html: `<div style="transform: rotate(${track}deg); color: #F9A53E; font-size: 16px; text-shadow: 0 0 4px #000; cursor: pointer;">&#9992;</div>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+
+                        const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
+                        marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
+
+                        marker.on('click', () => {
+                            const country = deriveCountryFromReg(reg);
+                            document.getElementById('input-callsign').value = callsign;
+                            document.getElementById('input-aircraft').value = model;
+                            document.getElementById('input-country').value = country;
+                            document.getElementById('input-route').value = "HND → ITM";
+                            statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
+                        });
+
+                        marker.addTo(aircraftLayer);
                     }
-                } catch (e) {
-                    // Silencia erro
-                }
-            }
-
-            aircraftLayer.clearLayers();
-
-            if (!sourceName) {
-                statusEl.innerText = "Radar offline: Check connection or adblocker.";
-                return;
-            }
-
-            if (planes.length === 0) {
-                statusEl.innerText = `0 aircraft in range right now (${sourceName}). Zoom out and click Scan Area.`;
-                return;
-            }
-
-            planes.forEach(p => {
-                const planeIcon = L.divIcon({
-                    className: 'custom-plane-icon',
-                    html: `<div style="transform: rotate(${p.track}deg); color: #F9A53E; font-size: 18px; text-shadow: 0 0 5px #000; cursor: pointer;">&#9992;</div>`,
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 11]
                 });
 
-                const marker = L.marker([p.lat, p.lon], { icon: planeIcon });
-                marker.bindTooltip(`${p.callsign} (${p.model})`, { direction: 'top' });
-
-                marker.on('click', () => {
-                    document.getElementById('input-callsign').value = p.callsign;
-                    document.getElementById('input-aircraft').value = p.model;
-                    document.getElementById('input-country').value = deriveCountryFromText(p.countryHint);
-                    statusEl.innerText = `Selected ${p.callsign} (${p.model}). Click Update & Sync Overlay.`;
-                });
-
-                marker.addTo(aircraftLayer);
-            });
-
-            statusEl.innerText = `Radar (${sourceName}): ${planes.length} aircraft found. Click any plane.`;
+                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
+            } catch (err) {
+                console.error("Radar fetch error:", err);
+                statusEl.innerText = "Radar error: Failed to fetch via proxy.";
+            }
         }
 
         // ================= WEATHER & ICONS =================
@@ -825,7 +796,7 @@
             const statusEl = document.getElementById('status-msg');
             if (!city || city.trim() === "") return;
 
-            statusEl.innerText = `Searching weather for ${city}...`;
+            statusEl.innerText = `Searching weather & radar for ${city}...`;
             try {
                 const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city.trim())}&count=1&language=en&format=json`);
                 const geoData = await geoRes.json();
@@ -839,7 +810,7 @@
                 currentLon = longitude;
 
                 if (map) {
-                    map.setView([currentLat, currentLon], 7);
+                    map.setView([currentLat, currentLon], 8);
                     refreshRadarFlights();
                 }
 
@@ -861,7 +832,8 @@
 
                 statusEl.innerText = `Weather updated for ${name}.`;
             } catch (err) {
-                statusEl.innerText = "Weather update completed.";
+                console.error("Weather fetch error:", err);
+                statusEl.innerText = "Failed to fetch weather data.";
             }
         }
 
@@ -888,7 +860,7 @@
                 settingsRef.set(payload).then(() => {
                     document.getElementById('status-msg').innerText = "Synced with Firebase!";
                 }).catch(() => {
-                    document.getElementById('status-msg').innerText = "Local update applied.";
+                    document.getElementById('status-msg').innerText = "Local update applied (Firebase offline).";
                 });
             }
         }
