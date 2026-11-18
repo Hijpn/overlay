@@ -698,15 +698,13 @@
 
             try {
                 // Usando proxy CORS gratuito para contornar o bloqueio do navegador no GitHub Pages
-                const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
-                const res = await fetch(proxyUrl);
-                if (!res.ok) throw new Error("Network response was not ok");
-                
-                const wrappedData = await res.json();
-                const data = JSON.parse(wrappedData.contents);
+                const workerUrl =
+                `https://square-salad-3dab.iharuji.workers.dev/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}`;
 
+                 const res = await fetch(workerUrl);
+                if (!res.ok) throw new Error(`Radar HTTP ${res.status}`);
+                const data = await res.json();
+ 
                 aircraftLayer.clearLayers();
 
                 if (!data.ac || data.ac.length === 0) {
