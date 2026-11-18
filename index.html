@@ -482,7 +482,7 @@
         <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol via Proxy)</span>
+                <span>Live Radar (adsb.lol / airplanes.live)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div id="radar-map"></div>
@@ -646,7 +646,7 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MINI RADAR MAP (ADSB.LOL VIA PROXY) =================
+        // ================= MINI RADAR MAP (ADSB.LOL / AIRPLANES.LIVE) =================
         let map = null;
         let aircraftLayer = null;
         let currentLat = 35.1815; // Default Nagoya
@@ -694,63 +694,76 @@
             if (!map) return;
 
             const center = map.getCenter();
-            statusEl.innerText = "Scanning live aircraft from adsb.lol...";
+            const lat = center.lat.toFixed(4);
+            const lon = center.lng.toFixed(4);
+            statusEl.innerText = "Scanning live aircraft...";
 
-            try {
-                // Usando proxy CORS gratuito para contornar o bloqueio do navegador no GitHub Pages
-                const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
-                const res = await fetch(proxyUrl);
-                if (!res.ok) throw new Error("Network response was not ok");
-                
-                const wrappedData = await res.json();
-                const data = JSON.parse(wrappedData.contents);
+            const endpoints = [
+                { name: "adsb.lol", url: `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/100` },
+                { name: "airplanes.live", url: `https://api.airplanes.live/v2/point/${lat}/${lon}/100` }
+            ];
 
-                aircraftLayer.clearLayers();
+            let data = null;
+            let sourceUsed = "";
 
-                if (!data.ac || data.ac.length === 0) {
-                    statusEl.innerText = "No aircraft detected in this area.";
-                    return;
-                }
-
-                let count = 0;
-                data.ac.forEach(ac => {
-                    if (ac.lat && ac.lon) {
-                        count++;
-                        const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim();
-                        const model = ac.t || "N/A";
-                        const reg = ac.r || "";
-                        const track = ac.track || 0;
-
-                        const planeIcon = L.divIcon({
-                            className: 'custom-plane-icon',
-                            html: `<div style="transform: rotate(${track}deg); color: #F9A53E; font-size: 16px; text-shadow: 0 0 4px #000; cursor: pointer;">&#9992;</div>`,
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
-                        });
-
-                        const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
-                        marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
-
-                        marker.on('click', () => {
-                            const country = deriveCountryFromReg(reg);
-                            document.getElementById('input-callsign').value = callsign;
-                            document.getElementById('input-aircraft').value = model;
-                            document.getElementById('input-country').value = country;
-                            document.getElementById('input-route').value = "HND → ITM";
-                            statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
-                        });
-
-                        marker.addTo(aircraftLayer);
+            for (const ep of endpoints) {
+                try {
+                    const res = await fetch(ep.url);
+                    if (res.ok) {
+                        data = await res.json();
+                        sourceUsed = ep.name;
+                        break;
                     }
-                });
-
-                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
-            } catch (err) {
-                console.error("Radar fetch error:", err);
-                statusEl.innerText = "Radar error: Failed to fetch via proxy.";
+                } catch (e) {
+                    console.warn(`Falha em ${ep.name}, tentando próximo...`, e);
+                }
             }
+
+            if (!data) {
+                statusEl.innerText = "Radar error: Could not reach ADS-B servers.";
+                return;
+            }
+
+            aircraftLayer.clearLayers();
+
+            if (!data.ac || data.ac.length === 0) {
+                statusEl.innerText = `No aircraft detected in this area (${sourceUsed}).`;
+                return;
+            }
+
+            let count = 0;
+            data.ac.forEach(ac => {
+                if (ac.lat && ac.lon) {
+                    count++;
+                    const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim();
+                    const model = ac.t || "N/A";
+                    const reg = ac.r || "";
+                    const track = ac.track || 0;
+
+                    const planeIcon = L.divIcon({
+                        className: 'custom-plane-icon',
+                        html: `<div style="transform: rotate(${track}deg); color: #F9A53E; font-size: 16px; text-shadow: 0 0 4px #000; cursor: pointer;">&#9992;</div>`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+
+                    const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
+                    marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
+
+                    marker.on('click', () => {
+                        const country = deriveCountryFromReg(reg);
+                        document.getElementById('input-callsign').value = callsign;
+                        document.getElementById('input-aircraft').value = model;
+                        document.getElementById('input-country').value = country;
+                        document.getElementById('input-route').value = "HND → ITM";
+                        statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
+                    });
+
+                    marker.addTo(aircraftLayer);
+                }
+            });
+
+            statusEl.innerText = `Radar (${sourceUsed}): ${count} aircraft found. Click any plane to select.`;
         }
 
         // ================= WEATHER & ICONS =================
