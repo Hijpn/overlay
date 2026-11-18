@@ -482,7 +482,7 @@
         <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol via Proxy)</span>
+                <span>Live Radar (OpenSky Network)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div id="radar-map"></div>
@@ -646,7 +646,7 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MINI RADAR MAP (ADSB.LOL VIA PROXY) =================
+        // ================= MINI RADAR MAP (OPENSKY NETWORK) =================
         let map = null;
         let aircraftLayer = null;
         let currentLat = 35.1815; // Default Nagoya
@@ -669,22 +669,15 @@
             refreshRadarFlights();
         }
 
-        function deriveCountryFromReg(reg) {
-            if (reg) {
-                const r = reg.toUpperCase();
-                if (r.startsWith("JA")) return "JP";
-                if (r.startsWith("N")) return "US";
-                if (r.startsWith("B-")) return "CN";
-                if (r.startsWith("HL")) return "KR";
-                if (r.startsWith("VH")) return "AU";
-                if (r.startsWith("G-")) return "GB";
-                if (r.startsWith("F-")) return "FR";
-                if (r.startsWith("D-")) return "DE";
-                if (r.startsWith("C-")) return "CA";
-                if (r.startsWith("9V")) return "SG";
-                if (r.startsWith("HS")) return "TH";
-                if (r.startsWith("RP")) return "PH";
-                if (r.startsWith("VN")) return "VN";
+        function deriveCountryFromReg(originCountry) {
+            if (originCountry) {
+                const c = originCountry.toUpperCase();
+                if (c.includes("JAPAN")) return "JP";
+                if (c.includes("STATES")) return "US";
+                if (c.includes("CHINA")) return "CN";
+                if (c.includes("KOREA")) return "KR";
+                if (c.includes("AUSTRALIA")) return "VH";
+                if (c.includes("KINGDOM")) return "GB";
             }
             return "JP";
         }
@@ -694,35 +687,39 @@
             if (!map) return;
 
             const center = map.getCenter();
-            statusEl.innerText = "Scanning live aircraft from adsb.lol...";
+            // Delimita uma caixa ao redor do ponto central (~1.5 grau de raio)
+            const lamin = center.lat - 1.5;
+            const lamax = center.lat + 1.5;
+            const lomin = center.lng - 1.5;
+            const lomax = center.lng + 1.5;
+
+            statusEl.innerText = "Scanning live aircraft from OpenSky...";
 
             try {
-                // Utilizando proxy CORS para contornar o bloqueio do navegador em GitHub Pages
-                const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
-                const res = await fetch(proxyUrl);
-                if (!res.ok) throw new Error("Network response was not ok");
-                
-                const wrappedData = await res.json();
-                const data = JSON.parse(wrappedData.contents);
+                const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("OpenSky network error");
 
+                const data = await res.json();
                 aircraftLayer.clearLayers();
 
-                if (!data.ac || data.ac.length === 0) {
+                if (!data.states || data.states.length === 0) {
                     statusEl.innerText = "No aircraft detected in this area.";
                     return;
                 }
 
                 let count = 0;
-                data.ac.forEach(ac => {
-                    if (ac.lat && ac.lon) {
-                        count++;
-                        const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim();
-                        const model = ac.t || "N/A";
-                        const reg = ac.r || "";
-                        const track = ac.track || 0;
+                data.states.forEach(state => {
+                    // state[5] = longitude, state[6] = latitude, state[1] = callsign, state[8] = on ground, state[10] = true track
+                    const lon = state[5];
+                    const lat = state[6];
+                    const callsign = (state[1] || "N/A").trim();
+                    const onGround = state[8];
+                    const track = state[10] || 0;
+                    const originCountry = state[2] || "";
 
+                    if (lat && lon && !onGround) {
+                        count++;
                         const planeIcon = L.divIcon({
                             className: 'custom-plane-icon',
                             html: `<div style="transform: rotate(${track}deg); color: #F9A53E; font-size: 16px; text-shadow: 0 0 4px #000; cursor: pointer;">&#9992;</div>`,
@@ -730,16 +727,16 @@
                             iconAnchor: [10, 10]
                         });
 
-                        const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
-                        marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
+                        const marker = L.marker([lat, lon], { icon: planeIcon });
+                        marker.bindTooltip(`${callsign}`, { direction: 'top' });
 
                         marker.on('click', () => {
-                            const country = deriveCountryFromReg(reg);
+                            const country = deriveCountryFromReg(originCountry);
                             document.getElementById('input-callsign').value = callsign;
-                            document.getElementById('input-aircraft').value = model;
+                            document.getElementById('input-aircraft').value = "Commercial Jet";
                             document.getElementById('input-country').value = country;
                             document.getElementById('input-route').value = "HND → ITM";
-                            statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
+                            statusEl.innerText = `Selected ${callsign}. Click Update & Sync Overlay.`;
                         });
 
                         marker.addTo(aircraftLayer);
@@ -748,8 +745,8 @@
 
                 statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
             } catch (err) {
-                console.error("Radar fetch error:", err);
-                statusEl.innerText = "Radar error: Could not reach ADS-B servers.";
+                console.error("OpenSky fetch error:", err);
+                statusEl.innerText = "Radar error: Could not reach OpenSky servers.";
             }
         }
 
