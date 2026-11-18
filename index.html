@@ -164,7 +164,6 @@
             z-index: 1;
         }
 
-        /* Dark Mode Filter for Free OSM Tiles */
         .dark-map-tiles {
             filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
@@ -572,7 +571,6 @@
 
             <!-- Right: Clock Section with Static Live Indicator -->
             <div class="clock-section">
-                <!-- Static Live Indicator Badge -->
                 <div class="live-indicator">
                     <span class="live-icon">
                         <svg viewBox="0 0 24 24" width="20" height="20">
@@ -700,8 +698,8 @@
 
             try {
                 const url = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Radar scan failed.");
+                const res = await fetch(url, { mode: 'cors' });
+                if (!res.ok) throw new Error("Radar response not OK.");
 
                 const data = await res.json();
                 aircraftLayer.clearLayers();
@@ -745,7 +743,8 @@
 
                 statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
             } catch (err) {
-                statusEl.innerText = "Radar error: " + err.message;
+                console.error("Radar fetch error:", err);
+                statusEl.innerText = "Radar warning: Retrying or API limit reached.";
             }
         }
 
