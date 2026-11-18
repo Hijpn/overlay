@@ -496,7 +496,7 @@
         <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol Multi-Proxy)</span>
+                <span>Live Radar (adsb.lol Auto-Retry)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div id="radar-map"></div>
@@ -611,20 +611,18 @@
             databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         };
 
-        // Dicionário de Companhias Aéreas por Prefixo ICAO/IATA
         const AIRLINE_CODE_MAP = {
             "JAL": "Japan Airlines", "JNA": "Japan Transocean Air", "J-AIR": "J-Air",
             "ANA": "All Nippon Airways", "ADO": "Air Do", "SNJ": "Skymid Air",
             "SKY": "Skymark Airlines", "APJ": "Peach Aviation", "SFJ": "StarFlyer",
-            "ADO": "Air Do", "IBX": "I-Bex Airlines", "FDA": "Fuji Dream Airlines",
-            "ORC": "Oriental Air Bridge", "JAC": "Japan Air Commuter", "RAC": "Ryukyu Air Commuter",
-            "JET": "Jetstar Japan", "AXT": "Spring Airlines Japan", "VOZ": "Volaris",
-            "CPA": "Cathay Pacific", "KAL": "Korean Air", "AAR": "Asiana Airlines",
-            "JAL": "Japan Airlines", "ANA": "All Nippon Airways", "SIA": "Singapore Airlines",
-            "CHH": "Hainan Airlines", "CCA": "Air China", "CSN": "China Southern",
-            "CES": "China Eastern", "EVA": "EVA Air", "CAL": "China Airlines",
-            "THA": "Thai Airways", "MAS": "Malaysia Airlines", "VNA": "Vietnam Airlines",
-            "JST": "Jetstar", "QFA": "Qantas", "UAL": "United Airlines", "DAL": "Delta Air Lines",
+            "IBX": "I-Bex Airlines", "FDA": "Fuji Dream Airlines", "ORC": "Oriental Air Bridge",
+            "JAC": "Japan Air Commuter", "RAC": "Ryukyu Air Commuter", "JET": "Jetstar Japan",
+            "AXT": "Spring Airlines Japan", "CPA": "Cathay Pacific", "KAL": "Korean Air",
+            "AAR": "Asiana Airlines", "SIA": "Singapore Airlines", "CHH": "Hainan Airlines",
+            "CCA": "Air China", "CSN": "China Southern", "CES": "China Eastern",
+            "EVA": "EVA Air", "CAL": "China Airlines", "THA": "Thai Airways",
+            "MAS": "Malaysia Airlines", "VNA": "Vietnam Airlines", "JST": "Jetstar",
+            "QFA": "Qantas", "UAL": "United Airlines", "DAL": "Delta Air Lines",
             "AAL": "American Airlines", "SWA": "Southwest Airlines", "BAW": "British Airways",
             "AFR": "Air France", "DLH": "Lufthansa", "UAE": "Emirates", "QTR": "Qatar Airways"
         };
@@ -632,7 +630,6 @@
         function getAirlineName(callsign) {
             if (!callsign) return "";
             const clean = callsign.trim().toUpperCase();
-            // Pega as primeiras letras antes dos números (ex: JAL921 -> JAL)
             const match = clean.match(/^[A-Z]+/);
             if (match) {
                 const prefix = match[0];
@@ -641,7 +638,6 @@
             return "";
         }
 
-        // Dicionário de Aeroportos
         const AIRPORT_CODE_MAP = {
             "HND": "Tokyo", "NRT": "Tokyo", "KIX": "Osaka", "ITM": "Osaka",
             "NGO": "Nagoya", "NKM": "Nagoya", "CTS": "Sapporo", "FUK": "Fukuoka",
@@ -681,7 +677,6 @@
             console.error("Firebase init error:", err);
         }
 
-        // ================= BAR DIMENSIONS SLIDERS =================
         function updateBarDimensions() {
             const widthVal = document.getElementById('slider-width').value;
             const heightVal = document.getElementById('slider-height').value;
@@ -693,25 +688,39 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MULTI-PROXY FETCH HELPER =================
-        async function fetchWithFallback(targetUrl) {
+        // ================= ROBUST MULTI-PROXY WITH RETRIES =================
+        async function fetchWithRetry(targetUrl, retries = 3) {
             const cacheBuster = `_t=${Date.now()}`;
             const urlWithBust = targetUrl.includes('?') ? `${targetUrl}&${cacheBuster}` : `${targetUrl}?${cacheBuster}`;
 
-            try {
-                const res = await fetch(urlWithBust);
-                if (res.ok) return await res.json();
-            } catch (e) {}
+            const proxies = [
+                urlWithBust,
+                `https://corsproxy.io/?${encodeURIComponent(urlWithBust)}`,
+                `https://api.allorigins.win/get?url=${encodeURIComponent(urlWithBust)}`
+            ];
 
-            try {
-                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(urlWithBust)}`);
-                if (res.ok) return await res.json();
-            } catch (e) {}
-
-            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(urlWithBust)}`);
-            if (!res.ok) throw new Error("All proxies failed");
-            const wrapped = await res.json();
-            return JSON.parse(wrapped.contents);
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                for (let i = 0; i < proxies.length; i++) {
+                    try {
+                        const res = await fetch(proxies[i]);
+                        if (res.ok) {
+                            const data = await res.json();
+                            // Se for allorigins, vem encapsulado em .contents
+                            if (proxies[i].includes('allorigins')) {
+                                return JSON.parse(data.contents);
+                            }
+                            return data;
+                        }
+                    } catch (e) {
+                        // Tenta o próximo proxy
+                    }
+                }
+                // Aguarda 1.5s antes de tentar novamente o bloco de proxies
+                if (attempt < retries) {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            }
+            throw new Error("All proxies and retries failed.");
         }
 
         // ================= MINI RADAR MAP =================
@@ -763,20 +772,11 @@
                     planes: [{ callsign: cleanCallsign, lat: lat, lng: lon }]
                 });
 
-                let res;
-                try {
-                    res = await fetch(routeEndpoint, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: bodyPayload
-                    });
-                } catch (e) {
-                    res = await fetch(`https://corsproxy.io/?${encodeURIComponent(routeEndpoint)}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: bodyPayload
-                    });
-                }
+                let res = await fetch(`https://corsproxy.io/?${encodeURIComponent(routeEndpoint)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: bodyPayload
+                });
 
                 if (res && res.ok) {
                     const routeData = await res.json();
@@ -793,11 +793,11 @@
             if (!map) return;
 
             const center = map.getCenter();
-            statusEl.innerText = "Scanning live aircraft from adsb.lol...";
+            statusEl.innerText = "Scanning live aircraft (connecting)...";
 
             try {
                 const targetUrl = `https://api.adsb.lol/v2/lat/${center.lat.toFixed(4)}/lon/${center.lng.toFixed(4)}/dist/100`;
-                const data = await fetchWithFallback(targetUrl);
+                const data = await fetchWithRetry(targetUrl);
 
                 aircraftLayer.clearLayers();
 
