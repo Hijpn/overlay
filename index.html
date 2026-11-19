@@ -780,8 +780,8 @@
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
             
-            // Atualiza o radar e a telemetria ao vivo a cada 10 segundos
-            setInterval(refreshRadarFlights, 10000);
+            // Sem chave da API, consultar a cada 4 minutos ajuda a evitar o limite diário.
+            setInterval(refreshRadarFlights, 240000);
         }
 
         function deriveCountryFromReg(reg) {
@@ -828,7 +828,7 @@
                 data.ac.forEach(ac => {
                     if (ac.lat && ac.lon) {
                         count++;
-                        const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim();
+                        const callsign = (ac.flight || ac.r || ac.hex || "N/A").trim().toUpperCase();
                         const model = ac.t || "N/A";
                         const reg = ac.r || "";
                         const track = ac.track || 0;
@@ -849,10 +849,19 @@
 
                         // Se este é o avião selecionado, atualiza a altitude e velocidade em tempo real!
                         if (selectedCallsign && callsign === selectedCallsign) {
+                            const altitudeInput = document.getElementById('input-altitude');
+                            const speedInput = document.getElementById('input-speed');
+                            const telemetryChanged = altitudeInput.value !== altFeet || speedInput.value !== speedKnots;
+
                             document.getElementById('display-altitude').innerText = altFeet;
                             document.getElementById('display-speed').innerText = speedKnots;
-                            document.getElementById('input-altitude').value = altFeet;
-                            document.getElementById('input-speed').value = speedKnots;
+                            altitudeInput.value = altFeet;
+                            speedInput.value = speedKnots;
+
+                            if (settingsRef && telemetryChanged) {
+                                settingsRef.update({ altitude: altFeet, speed: speedKnots })
+                                    .catch(err => console.error("Telemetry sync error:", err));
+                            }
                         }
 
                         const planeIcon = L.divIcon({
@@ -899,6 +908,9 @@
                 statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to track live.`;
             } catch (err) {
                 console.error("Radar fetch error:", err);
+                statusEl.innerText = err.message.includes("HTTP 429")
+                    ? "Radar rate limit (HTTP 429)."
+                    : "Radar update failed. Check console for details.";
             }
         }
 
@@ -1070,10 +1082,12 @@
                 if (data) {
                     applySettingsObject(data);
 
+                    const previousCallsign = selectedCallsign;
                     const callsign = (data.callsign || "").trim().toUpperCase();
-                    if (callsign && !selectedCallsign) {
+                    selectedCallsign = callsign && callsign !== "N/A" ? callsign : null;
+                    if (selectedCallsign && selectedCallsign !== previousCallsign) {
                         resolveAircraftRoute({ flight: callsign }).then(route => {
-                            if (selectedCallsign || document.getElementById('input-callsign').value.trim().toUpperCase() !== callsign) return;
+                            if (selectedCallsign !== callsign || document.getElementById('input-callsign').value.trim().toUpperCase() !== callsign) return;
                             document.getElementById('input-route').value = route;
                             document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
                         });
