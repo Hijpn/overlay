@@ -49,6 +49,7 @@
             top: 20px;
             left: 20px;
             width: 440px;
+            max-width: calc(100vw - 40px);
             max-height: calc(100vh - 150px);
             overflow-y: auto;
             background: rgba(13, 27, 42, 0.96);
@@ -229,38 +230,39 @@
             font-weight: 600;
         }
 
-        /* ================= BROADCAST OVERLAY ================= */
+        /* ================= BROADCAST OVERLAY RESPONSIVO ================= */
         .overlay-wrapper {
             position: fixed;
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            width: var(--bar-width);
+            width: var(--bar-width, 92%);
             max-width: 1600px;
             transition: width 0.1s ease;
         }
 
         .broadcast-bar {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr auto 1fr;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            height: var(--bar-height);
-            padding: 0 28px;
+            height: var(--bar-height, 82px);
+            padding: 0 clamp(12px, 2vw, 28px);
             border-radius: 12px;
-            background: var(--top-bg);
+            background: var(--top-bg, rgba(6, 21, 45, 0.85));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-top: 2px solid var(--top-border-color);
-            border-bottom: 2px solid var(--bottom-border-color);
+            border-top: 2px solid var(--top-border-color, #38bdf8);
+            border-bottom: 2px solid var(--bottom-border-color, #F9A53E);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
             overflow: hidden;
+            gap: clamp(8px, 1.5vw, 20px);
         }
 
         .divider-v {
             width: 2px;
             height: 55%;
             background: rgba(255, 255, 255, 0.2);
-            margin: 0 20px;
+            flex-shrink: 0;
         }
 
         /* Left: Weather Section */
@@ -268,14 +270,15 @@
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 14px;
+            gap: clamp(8px, 1.2vw, 14px);
             color: #ffffff;
+            flex: 1;
             min-width: 0;
         }
 
         .weather-icon {
-            width: 46px;
-            height: 46px;
+            width: clamp(36px, 4vw, 46px);
+            height: clamp(36px, 4vw, 46px);
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -295,34 +298,45 @@
             flex-direction: column;
             justify-content: center;
             white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .city-title {
+            font-size: clamp(11px, 1.2vw, 15px);
+            font-weight: 800;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.1;
+            margin-bottom: 2px;
         }
 
         .weather-top-row {
             display: flex;
             align-items: baseline;
-            gap: 10px;
+            gap: clamp(6px, 1vw, 10px);
         }
 
         .main-temp {
-            font-size: 32px;
+            font-size: clamp(20px, 2.5vw, 32px);
             font-weight: 800;
             line-height: 1;
             letter-spacing: -0.5px;
         }
 
         .condition-text {
-            font-size: 14px;
+            font-size: clamp(11px, 1.2vw, 14px);
             font-weight: 600;
             color: #cbd5e1;
         }
 
         .weather-details {
             display: flex;
-            gap: 8px;
-            font-size: 12px;
+            gap: 6px;
+            font-size: clamp(9px, 1vw, 12px);
             font-weight: 600;
             color: #94a3b8;
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         .weather-details span {
@@ -334,14 +348,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
+            gap: clamp(10px, 1.5vw, 16px);
             color: #ffffff;
+            flex: 1.3;
             min-width: 0;
         }
 
         .flag-box {
-            width: 48px;
-            height: 32px;
+            width: clamp(38px, 4vw, 48px);
+            height: clamp(26px, 3vw, 32px);
             flex-shrink: 0;
             border-radius: 4px;
             overflow: hidden;
@@ -362,25 +377,45 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            min-width: 0;
+        }
+
+        .flight-sub-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             white-space: nowrap;
         }
 
         .callsign-text {
-            font-size: 24px;
+            font-size: clamp(12px, 1.3vw, 16px);
             font-weight: 800;
             letter-spacing: 0.5px;
-            line-height: 1.1;
+            line-height: 1;
             color: #F9A53E;
         }
 
-        .route-text {
-            font-size: 14px;
+        .airline-badge {
+            font-size: clamp(9px, 1vw, 11px);
             font-weight: 700;
-            color: #e2e8f0;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 1px 5px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .route-text {
+            font-size: clamp(14px, 1.8vw, 22px);
+            font-weight: 800;
+            color: #ffffff;
             margin-top: 2px;
+            line-height: 1.1;
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
         }
 
         .route-arrow {
@@ -388,16 +423,20 @@
             font-weight: 800;
         }
 
-        .aircraft-model {
-            font-size: 13px;
-            font-weight: 700;
-            color: #e2e8f0;
-            background: rgba(15, 23, 42, 0.75);
-            padding: 5px 10px;
-            border-radius: 6px;
-            border: 1px solid rgba(56, 189, 248, 0.35);
+        .aircraft-telemetry {
+            display: flex;
+            gap: 8px;
+            font-size: clamp(8px, 0.9vw, 10px);
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            text-transform: uppercase;
             white-space: nowrap;
-            flex-shrink: 0;
+        }
+
+        .aircraft-telemetry span {
+            color: #e2e8f0;
         }
 
         /* Right: Clock Section with Static Live Indicator */
@@ -405,18 +444,19 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 14px;
+            gap: clamp(8px, 1.2vw, 14px);
             color: #ffffff;
+            flex: 1;
             min-width: 0;
         }
 
         .live-indicator {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             background: rgba(239, 68, 68, 0.2);
             border: 1px solid rgba(239, 68, 68, 0.5);
-            padding: 6px 12px;
+            padding: clamp(4px, 0.8vw, 6px) clamp(8px, 1vw, 12px);
             border-radius: 20px;
             white-space: nowrap;
         }
@@ -427,7 +467,7 @@
         }
 
         .live-text {
-            font-size: 13px;
+            font-size: clamp(10px, 1.1vw, 12px);
             font-weight: 800;
             color: #fca5a5;
             letter-spacing: 0.5px;
@@ -442,7 +482,7 @@
         }
 
         .clock-time {
-            font-size: 36px;
+            font-size: clamp(22px, 2.8vw, 36px);
             font-weight: 800;
             letter-spacing: 0.5px;
             line-height: 1;
@@ -450,11 +490,20 @@
         }
 
         .clock-date {
-            font-size: 13px;
+            font-size: clamp(10px, 1.1vw, 13px);
             font-weight: 600;
             color: #cbd5e1;
-            margin-top: 4px;
+            margin-top: 3px;
             letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 768px) {
+            .broadcast-bar {
+                padding: 0 12px;
+            }
+            .divider-v {
+                margin: 0 6px;
+            }
         }
     </style>
 </head>
@@ -467,7 +516,6 @@
             <button class="main-btn btn-secondary" style="flex:0; padding:4px 10px;" onclick="togglePanel()">Hide</button>
         </div>
 
-        <!-- Bar Dimensions Sliders -->
         <div class="form-row">
             <div class="form-group">
                 <label>Bar Width <span id="val-width">92%</span></label>
@@ -479,7 +527,6 @@
             </div>
         </div>
 
-        <!-- Mini Live Radar Map -->
         <div id="radar-container">
             <div id="radar-header">
                 <span>Live Radar (adsb.lol via Proxy)</span>
@@ -505,7 +552,7 @@
 
         <div class="form-group">
             <label>Route Display Label (Auto-City)</label>
-            <input type="text" id="input-route" value="HND → ITM" placeholder="Ex: HND → ITM">
+            <input type="text" id="input-route" value="N/A → N/A" placeholder="Auto from ADS-B; N/A if unavailable">
         </div>
 
         <div class="form-row">
@@ -517,6 +564,17 @@
             <div class="form-group">
                 <label>Aircraft Model</label>
                 <input type="text" id="input-aircraft" value="Boeing 787-8" placeholder="Ex: B788, N/A...">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Altitude (Feet)</label>
+                <input type="text" id="input-altitude" value="35000 ft" placeholder="Ex: 35000 ft">
+            </div>
+            <div class="form-group">
+                <label>Speed (Knots)</label>
+                <input type="text" id="input-speed" value="480 kts" placeholder="Ex: 480 kts">
             </div>
         </div>
 
@@ -539,6 +597,7 @@
             <div class="weather-section">
                 <div class="weather-icon" id="weather-icon" onclick="togglePanel()" title="Click to open settings"></div>
                 <div class="weather-info">
+                    <div class="city-title" id="display-city-name">Nagoya</div>
                     <div class="weather-top-row">
                         <span class="main-temp" id="display-temp">--°C</span>
                         <span class="condition-text" id="display-condition">Loading...</span>
@@ -559,12 +618,17 @@
                     <img id="display-flag-img" src="https://flagcdn.com/w80/jp.png" alt="Country Flag" onerror="this.src='https://flagcdn.com/w80/un.png'">
                 </div>
                 <div class="flight-main-info">
-                    <span class="callsign-text" id="display-callsign">JAL921</span>
-                    <div class="route-text">
-                        <span id="display-route">HND <span class="route-arrow">&rarr;</span> ITM</span>
+                    <div class="flight-sub-header">
+                        <span class="callsign-text" id="display-callsign">JAL921</span>
+                        <span class="airline-badge" id="display-airline">Japan Airlines</span>
+                    </div>
+                    <div class="route-text" id="display-route">
+                        N/A <span class="route-arrow">&rarr;</span> N/A
+                    </div>
+                    <div class="aircraft-telemetry">
+                        <span id="display-aircraft">B788</span> &bull; Alt: <span id="display-altitude">35000 ft</span> &bull; Spd: <span id="display-speed">480 kts</span>
                     </div>
                 </div>
-                <div class="aircraft-model" id="display-aircraft">Boeing 787-8</div>
             </div>
 
             <div class="divider-v"></div>
@@ -573,7 +637,7 @@
             <div class="clock-section">
                 <div class="live-indicator">
                     <span class="live-icon">
-                        <svg viewBox="0 0 24 24" width="20" height="20">
+                        <svg viewBox="0 0 24 24" width="16" height="16">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
                         </svg>
                     </span>
@@ -589,7 +653,6 @@
     </div>
 
     <script>
-        // ================= FIREBASE CONFIGURATION =================
         const firebaseConfig = {
             databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         };
@@ -600,17 +663,35 @@
             "KOJ": "Kagoshima", "KMJ": "Kumamoto", "NGA": "Niigata", "SDJ": "Sendai",
             "TAK": "Takamatsu", "KIJ": "Niigata", "KKJ": "Kitakyushu", "FSZ": "Shizuoka",
             "AOJ": "Aomori", "HKD": "Hakodate", "IBR": "Ibaraki", "MYJ": "Matsuyama",
-            "OIT": "Oita", "UBJ": "Ube", "MZV": "Matsumoto"
+            "OIT": "Oita", "UBJ": "Ube", "MZV": "Matsumoto", "TPE": "Taipei", "ICN": "Seoul"
         };
 
+        const AIRLINE_MAP = {
+            "JAL": "Japan Airlines", "ANA": "All Nippon Airways", "EVA": "EVA Air",
+            "CAL": "China Airlines", "FDA": "Fuji Dream Airlines", "SKY": "Skymark",
+            "ADO": "Air Do", "SNJ": "Solaseed Air", "SFJ": "StarFlyer",
+            "APJ": "Peach Aviation", "JJP": "Jetstar Japan", "KAL": "Korean Air",
+            "AAR": "Asiana Airlines", "CPA": "Cathay Pacific", "SIA": "Singapore Airlines",
+            "THA": "Thai Airways", "UAL": "United Airlines", "DAL": "Delta Air Lines",
+            "AAL": "American Airlines"
+        };
+
+        let selectedCallsign = null; // Guarda o voo selecionado para atualizar em tempo real
+
+        function getAirlineName(callsign) {
+            if (!callsign) return "";
+            const prefix = callsign.replace(/[^A-Za-z]/g, '').toUpperCase().substring(0, 3);
+            return AIRLINE_MAP[prefix] || prefix;
+        }
+
         function getCityName(code) {
-            const cleanCode = code.trim().toUpperCase();
+            const cleanCode = code ? code.trim().toUpperCase() : "";
             return AIRPORT_CODE_MAP[cleanCode] || cleanCode;
         }
 
         function formatRouteWithCities(routeString) {
             if (!routeString || !routeString.includes('→')) {
-                return routeString || "N/A → N/A";
+                return routeString || "N/A <span class=\"route-arrow\">&rarr;</span> N/A";
             }
             const parts = routeString.split('→').map(s => s.trim());
             const origCode = parts[0];
@@ -619,7 +700,40 @@
             const origCity = getCityName(origCode);
             const destCity = getCityName(destCode);
 
-            return `${origCity} → ${destCity}`;
+            return `${origCity} <span class="route-arrow">&rarr;</span> ${destCity}`;
+        }
+
+        const NO_ROUTE_LABEL = "N/A → N/A";
+
+        async function resolveAircraftRoute(aircraft) {
+            const callsign = (aircraft.flight || "").trim().toUpperCase();
+            let routeLabel = NO_ROUTE_LABEL;
+
+            if (callsign.length < 3) return routeLabel;
+
+            try {
+                const routeUrl = `https://vrs-standing-data.adsb.lol/routes/${callsign.slice(0, 2)}/${encodeURIComponent(callsign)}.json`;
+                const response = await fetch(routeUrl);
+                if (response.status === 404) return routeLabel;
+                if (!response.ok) throw new Error(`Route lookup HTTP ${response.status}`);
+
+                const route = await response.json();
+                const airportCodes = route._airport_codes_iata && route._airport_codes_iata !== "unknown"
+                    ? route._airport_codes_iata
+                    : route.airport_codes;
+                const codes = (airportCodes || "")
+                    .split("-")
+                    .map(code => code.trim().toUpperCase())
+                    .filter(code => /^[A-Z0-9]{3,4}$/.test(code));
+
+                if (codes.length >= 2) {
+                    routeLabel = `${codes[0]} → ${codes[codes.length - 1]}`;
+                }
+            } catch (err) {
+                console.error("Route lookup error:", err);
+            }
+
+            return routeLabel;
         }
 
         let db = null;
@@ -634,7 +748,6 @@
             console.error("Firebase init error:", err);
         }
 
-        // ================= BAR DIMENSIONS SLIDERS =================
         function updateBarDimensions() {
             const widthVal = document.getElementById('slider-width').value;
             const heightVal = document.getElementById('slider-height').value;
@@ -646,10 +759,9 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
-        // ================= MINI RADAR MAP (ADSB.LOL VIA PROXY) =================
         let map = null;
         let aircraftLayer = null;
-        let currentLat = 35.1815; // Default Nagoya
+        let currentLat = 35.1815;
         let currentLon = 136.9066;
 
         function initRadarMap() {
@@ -667,6 +779,9 @@
 
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
+            
+            // Atualiza o radar e a telemetria ao vivo a cada 10 segundos
+            setInterval(refreshRadarFlights, 10000);
         }
 
         function deriveCountryFromReg(reg) {
@@ -694,14 +809,11 @@
             if (!map) return;
 
             const center = map.getCenter();
-            statusEl.innerText = "Scanning live aircraft from adsb.lol...";
 
             try {
-                // Usando proxy CORS gratuito para contornar o bloqueio do navegador no GitHub Pages
-                const workerUrl =
-                `https://square-salad-3dab.iharuji.workers.dev/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}`;
+                const workerUrl = `https://square-salad-3dab.iharuji.workers.dev/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}`;
 
-                 const res = await fetch(workerUrl);
+                const res = await fetch(workerUrl);
                 if (!res.ok) throw new Error(`Radar HTTP ${res.status}`);
                 const data = await res.json();
  
@@ -720,6 +832,28 @@
                         const model = ac.t || "N/A";
                         const reg = ac.r || "";
                         const track = ac.track || 0;
+                        
+                        let altFeet = "0 ft";
+                        if (ac.alt_baro !== undefined && ac.alt_baro !== "ground") {
+                            altFeet = `${ac.alt_baro} ft`;
+                        } else if (ac.alt_geom !== undefined) {
+                            altFeet = `${ac.alt_geom} ft`;
+                        }
+
+                        let speedKnots = (ac.gs !== undefined) ? `${Math.round(ac.gs)} kts` : "0 kts";
+
+                        let routeStr = NO_ROUTE_LABEL;
+                        if (ac.from && ac.to) {
+                            routeStr = `${ac.from} → ${ac.to}`;
+                        }
+
+                        // Se este é o avião selecionado, atualiza a altitude e velocidade em tempo real!
+                        if (selectedCallsign && callsign === selectedCallsign) {
+                            document.getElementById('display-altitude').innerText = altFeet;
+                            document.getElementById('display-speed').innerText = speedKnots;
+                            document.getElementById('input-altitude').value = altFeet;
+                            document.getElementById('input-speed').value = speedKnots;
+                        }
 
                         const planeIcon = L.divIcon({
                             className: 'custom-plane-icon',
@@ -729,34 +863,50 @@
                         });
 
                         const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
-                        marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
+                        marker.bindTooltip(`${callsign} (${model}) - ${altFeet}`, { direction: 'top' });
 
                         marker.on('click', () => {
+                            selectedCallsign = callsign; // Define o avião para rastreamento ao vivo
                             const country = deriveCountryFromReg(reg);
                             document.getElementById('input-callsign').value = callsign;
                             document.getElementById('input-aircraft').value = model;
                             document.getElementById('input-country').value = country;
-                            document.getElementById('input-route').value = "HND → ITM";
-                            statusEl.innerText = `Selected ${callsign} (${model}). Click Update & Sync Overlay.`;
+                            document.getElementById('input-route').value = routeStr;
+                            document.getElementById('input-altitude').value = altFeet;
+                            document.getElementById('input-speed').value = speedKnots;
+
+                            document.getElementById('display-callsign').innerText = callsign;
+                            document.getElementById('display-airline').innerText = getAirlineName(callsign);
+                            document.getElementById('display-route').innerHTML = formatRouteWithCities(NO_ROUTE_LABEL);
+                            document.getElementById('display-aircraft').innerText = model;
+                            document.getElementById('display-altitude').innerText = altFeet;
+                            document.getElementById('display-speed').innerText = speedKnots;
+                            document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
+
+                            statusEl.innerText = `Tracking ${callsign} live (Alt & Spd updating).`;
+                            resolveAircraftRoute(ac).then(route => {
+                                if (selectedCallsign !== callsign) return;
+                                document.getElementById('input-route').value = route;
+                                document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
+                                pushSettingsToFirebase();
+                            });
                         });
 
                         marker.addTo(aircraftLayer);
                     }
                 });
 
-                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to select.`;
+                statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to track live.`;
             } catch (err) {
                 console.error("Radar fetch error:", err);
-                statusEl.innerText = "Radar error: Failed to fetch via proxy.";
             }
         }
 
-        // ================= WEATHER & ICONS =================
         const weatherIcons = {
-            clear: `<svg viewBox="0 0 64 64" width="44" height="44"><circle cx="32" cy="32" r="14" fill="#FDB813"/><g stroke="#FDB813" stroke-width="4" stroke-linecap="round"><line x1="32" y1="6" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="58"/><line x1="6" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="58" y2="32"/><line x1="13.6" y1="13.6" x2="17.8" y2="17.8"/><line x1="46.2" y1="46.2" x2="50.4" y2="50.4"/><line x1="13.6" y1="50.4" x2="17.8" y2="46.2"/><line x1="46.2" y1="17.8" x2="50.4" y2="13.6"/></g></svg>`,
-            partlyCloudy: `<svg viewBox="0 0 64 64" width="44" height="44"><circle cx="24" cy="24" r="11" fill="#FDB813"/><g stroke="#FDB813" stroke-width="3" stroke-linecap="round"><line x1="24" y1="6" x2="24" y2="10"/><line x1="6" y1="24" x2="10" y2="24"/><line x1="11" y1="11" x2="14" y2="14"/><line x1="37" y1="11" x2="34" y2="14"/><line x1="11" y1="37" x2="14" y2="34"/></g><path d="M46 46H22a10 10 0 0 1-1.5-19.9A13 13 0 0 1 45.8 29 8.5 8.5 0 0 1 46 46z" fill="#ffffff"/></svg>`,
-            cloudy: `<svg viewBox="0 0 64 64" width="44" height="44"><path d="M48 46H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 27 9.5 9.5 0 0 1 48 46z" fill="#e2e8f0"/></svg>`,
-            rain: `<svg viewBox="0 0 64 64" width="44" height="44"><path d="M48 40H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 21 9.5 9.5 0 0 1 48 40z" fill="#cbd5e1"/><g stroke="#38bdf8" stroke-width="3" stroke-linecap="round"><line x1="22" y1="46" x2="19" y2="54"/><line x1="32" y1="46" x2="29" y2="54"/><line x1="42" y1="46" x2="39" y2="54"/></g></svg>`
+            clear: `<svg viewBox="0 0 64 64" width="100%" height="100%"><circle cx="32" cy="32" r="14" fill="#FDB813"/><g stroke="#FDB813" stroke-width="4" stroke-linecap="round"><line x1="32" y1="6" x2="32" y2="12"/><line x1="32" y1="52" x2="32" y2="58"/><line x1="6" y1="32" x2="12" y2="32"/><line x1="52" y1="32" x2="58" y2="32"/><line x1="13.6" y1="13.6" x2="17.8" y2="17.8"/><line x1="46.2" y1="46.2" x2="50.4" y2="50.4"/><line x1="13.6" y1="50.4" x2="17.8" y2="46.2"/><line x1="46.2" y1="17.8" x2="50.4" y2="13.6"/></g></svg>`,
+            partlyCloudy: `<svg viewBox="0 0 64 64" width="100%" height="100%"><circle cx="24" cy="24" r="11" fill="#FDB813"/><g stroke="#FDB813" stroke-width="3" stroke-linecap="round"><line x1="24" y1="6" x2="24" y2="10"/><line x1="6" y1="24" x2="10" y2="24"/><line x1="11" y1="11" x2="14" y2="14"/><line x1="37" y1="11" x2="34" y2="14"/><line x1="11" y1="37" x2="14" y2="34"/></g><path d="M46 46H22a10 10 0 0 1-1.5-19.9A13 13 0 0 1 45.8 29 8.5 8.5 0 0 1 46 46z" fill="#ffffff"/></svg>`,
+            cloudy: `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M48 46H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 27 9.5 9.5 0 0 1 48 46z" fill="#e2e8f0"/></svg>`,
+            rain: `<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M48 40H18a11 11 0 0 1-1.6-21.9A14 14 0 0 1 43.8 21 9.5 9.5 0 0 1 48 40z" fill="#cbd5e1"/><g stroke="#38bdf8" stroke-width="3" stroke-linecap="round"><line x1="22" y1="46" x2="19" y2="54"/><line x1="32" y1="46" x2="29" y2="54"/><line x1="42" y1="46" x2="39" y2="54"/></g></svg>`
         };
 
         document.getElementById('weather-icon').innerHTML = weatherIcons.partlyCloudy;
@@ -807,6 +957,8 @@
                 currentLat = latitude;
                 currentLon = longitude;
 
+                document.getElementById('display-city-name').innerText = name;
+
                 if (map) {
                     map.setView([currentLat, currentLon], 8);
                     refreshRadarFlights();
@@ -835,7 +987,6 @@
             }
         }
 
-        // ================= FIREBASE SYNC =================
         function pushSettingsToFirebase() {
             const cityVal = document.getElementById('input-city').value.trim() || "Nagoya";
             const rawRoute = document.getElementById('input-route').value.trim() || "N/A → N/A";
@@ -846,6 +997,8 @@
                 route: rawRoute,
                 country: document.getElementById('input-country').value.trim() || "JP",
                 aircraft: document.getElementById('input-aircraft').value.trim() || "N/A",
+                altitude: document.getElementById('input-altitude').value.trim() || "35000 ft",
+                speed: document.getElementById('input-speed').value.trim() || "480 kts",
                 liveLabel: document.getElementById('input-live-label').value.trim() || "",
                 barWidth: document.getElementById('slider-width').value,
                 barHeight: document.getElementById('slider-height').value
@@ -871,76 +1024,80 @@
                 document.getElementById('val-width').innerText = `${data.barWidth}%`;
                 document.documentElement.style.setProperty('--bar-width', `${data.barWidth}%`);
             }
-
             if (data.barHeight) {
                 document.getElementById('slider-height').value = data.barHeight;
                 document.getElementById('val-height').innerText = `${data.barHeight}px`;
                 document.documentElement.style.setProperty('--bar-height', `${data.barHeight}px`);
             }
-
             if (data.city) {
-                const prevCity = document.getElementById('input-city').value;
                 document.getElementById('input-city').value = data.city;
-                if (prevCity !== data.city) {
-                    fetchAndApplyWeather(data.city);
-                }
+                document.getElementById('display-city-name').innerText = data.city;
             }
-
             if (data.callsign) {
                 document.getElementById('input-callsign').value = data.callsign;
                 document.getElementById('display-callsign').innerText = data.callsign;
+                document.getElementById('display-airline').innerText = getAirlineName(data.callsign);
             }
-
             if (data.route) {
                 document.getElementById('input-route').value = data.route;
-                const formattedRoute = formatRouteWithCities(data.route);
-                document.getElementById('display-route').innerHTML = formattedRoute.replace('→', '<span class="route-arrow">&rarr;</span>');
+                document.getElementById('display-route').innerHTML = formatRouteWithCities(data.route);
             }
-
             if (data.country) {
                 document.getElementById('input-country').value = data.country;
                 document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${data.country.toLowerCase()}.png`;
             }
-
             if (data.aircraft) {
                 document.getElementById('input-aircraft').value = data.aircraft;
                 document.getElementById('display-aircraft').innerText = data.aircraft;
             }
-
+            if (data.altitude) {
+                document.getElementById('input-altitude').value = data.altitude;
+                document.getElementById('display-altitude').innerText = data.altitude;
+            }
+            if (data.speed) {
+                document.getElementById('input-speed').value = data.speed;
+                document.getElementById('display-speed').innerText = data.speed;
+            }
             if (data.liveLabel !== undefined) {
                 document.getElementById('input-live-label').value = data.liveLabel;
-                const liveIndicator = document.querySelector('.live-indicator');
-                if (data.liveLabel.trim() === "") {
-                    liveIndicator.style.display = 'none';
-                } else {
-                    liveIndicator.style.display = 'flex';
-                    document.getElementById('display-live-label').innerText = data.liveLabel;
-                }
+                document.getElementById('display-live-label').innerText = data.liveLabel;
             }
         }
 
         if (settingsRef) {
-            settingsRef.on('value', (snapshot) => {
-                const val = snapshot.val();
-                if (val) applySettingsObject(val);
+            settingsRef.on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    applySettingsObject(data);
+
+                    const callsign = (data.callsign || "").trim().toUpperCase();
+                    if (callsign && !selectedCallsign) {
+                        resolveAircraftRoute({ flight: callsign }).then(route => {
+                            if (selectedCallsign || document.getElementById('input-callsign').value.trim().toUpperCase() !== callsign) return;
+                            document.getElementById('input-route').value = route;
+                            document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
+                        });
+                    }
+                }
             });
         }
 
-        // ================= CLOCK LOOP =================
         function updateClock() {
             const now = new Date();
-            document.getElementById('display-time').innerText = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-            document.getElementById('display-date').innerText = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('display-time').innerText = `${hours}:${minutes}`;
+
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('display-date').innerText = now.toLocaleDateString('en-US', options);
         }
+
         setInterval(updateClock, 1000);
         updateClock();
-
-        // ================= INITIALIZE =================
-        window.addEventListener('DOMContentLoaded', () => {
+        window.onload = () => {
             initRadarMap();
-            fetchAndApplyWeather("Nagoya");
-            document.getElementById('control-panel').classList.add('show');
-        });
+            fetchAndApplyWeather(document.getElementById('input-city').value);
+        };
     </script>
 </body>
 </html>
