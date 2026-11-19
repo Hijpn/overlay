@@ -567,17 +567,6 @@
             </div>
         </div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label>Altitude (Feet)</label>
-                <input type="text" id="input-altitude" value="35000 ft" placeholder="Ex: 35000 ft">
-            </div>
-            <div class="form-group">
-                <label>Speed (Knots)</label>
-                <input type="text" id="input-speed" value="480 kts" placeholder="Ex: 480 kts">
-            </div>
-        </div>
-
         <div class="form-group">
             <label>Live Status Label</label>
             <input type="text" id="input-live-label" value="LIVE NOW" placeholder="Ex: LIVE NOW, ON AIR...">
@@ -626,7 +615,7 @@
                         N/A <span class="route-arrow">&rarr;</span> N/A
                     </div>
                     <div class="aircraft-telemetry">
-                        <span id="display-aircraft">B788</span> &bull; Alt: <span id="display-altitude">35000 ft</span> &bull; Spd: <span id="display-speed">480 kts</span>
+                        <span id="display-aircraft">B788</span>
                     </div>
                 </div>
             </div>
@@ -685,22 +674,26 @@
         }
 
         function getCityName(code) {
-            const cleanCode = code ? code.trim().toUpperCase() : "";
-            return AIRPORT_CODE_MAP[cleanCode] || cleanCode;
+            const original = code ? code.trim() : "";
+            const cleanCode = original.toUpperCase();
+            return AIRPORT_CODE_MAP[cleanCode] || (/^[A-Z0-9]{3,4}$/.test(cleanCode) ? cleanCode : original);
+        }
+
+        function getRouteCityLabel(routeString) {
+            if (!routeString || !routeString.includes('→')) {
+                return routeString || NO_ROUTE_LABEL;
+            }
+            const parts = routeString.split('→').map(s => s.trim());
+            return `${getCityName(parts[0])} → ${getCityName(parts[parts.length - 1])}`;
         }
 
         function formatRouteWithCities(routeString) {
             if (!routeString || !routeString.includes('→')) {
                 return routeString || "N/A <span class=\"route-arrow\">&rarr;</span> N/A";
             }
-            const parts = routeString.split('→').map(s => s.trim());
-            const origCode = parts[0];
-            const destCode = parts.length > 1 ? parts[1] : "";
-            
-            const origCity = getCityName(origCode);
-            const destCity = getCityName(destCode);
+            const parts = getRouteCityLabel(routeString).split('→').map(s => s.trim());
 
-            return `${origCity} <span class="route-arrow">&rarr;</span> ${destCity}`;
+            return `${parts[0]} <span class="route-arrow">&rarr;</span> ${parts[1]}`;
         }
 
         const NO_ROUTE_LABEL = "N/A → N/A";
@@ -718,6 +711,15 @@
                 if (!response.ok) throw new Error(`Route lookup HTTP ${response.status}`);
 
                 const route = await response.json();
+                for (const airport of route._airports || []) {
+                    const city = airport.location || airport.city || airport.municipality;
+                    if (!city) continue;
+
+                    for (const code of [airport.iata, airport.icao]) {
+                        if (code) AIRPORT_CODE_MAP[code.trim().toUpperCase()] = city.trim();
+                    }
+                }
+
                 const airportCodes = route._airport_codes_iata && route._airport_codes_iata !== "unknown"
                     ? route._airport_codes_iata
                     : route.airport_codes;
@@ -780,7 +782,7 @@
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
             
-            // Sem chave da API, consultar a cada 4 minutos ajuda a evitar o limite diário.
+            // Sem chave da API, consulta a cada 4 minutos para reduzir o risco de HTTP 429.
             setInterval(refreshRadarFlights, 240000);
         }
 
@@ -833,35 +835,9 @@
                         const reg = ac.r || "";
                         const track = ac.track || 0;
                         
-                        let altFeet = "0 ft";
-                        if (ac.alt_baro !== undefined && ac.alt_baro !== "ground") {
-                            altFeet = `${ac.alt_baro} ft`;
-                        } else if (ac.alt_geom !== undefined) {
-                            altFeet = `${ac.alt_geom} ft`;
-                        }
-
-                        let speedKnots = (ac.gs !== undefined) ? `${Math.round(ac.gs)} kts` : "0 kts";
-
                         let routeStr = NO_ROUTE_LABEL;
                         if (ac.from && ac.to) {
                             routeStr = `${ac.from} → ${ac.to}`;
-                        }
-
-                        // Se este é o avião selecionado, atualiza a altitude e velocidade em tempo real!
-                        if (selectedCallsign && callsign === selectedCallsign) {
-                            const altitudeInput = document.getElementById('input-altitude');
-                            const speedInput = document.getElementById('input-speed');
-                            const telemetryChanged = altitudeInput.value !== altFeet || speedInput.value !== speedKnots;
-
-                            document.getElementById('display-altitude').innerText = altFeet;
-                            document.getElementById('display-speed').innerText = speedKnots;
-                            altitudeInput.value = altFeet;
-                            speedInput.value = speedKnots;
-
-                            if (settingsRef && telemetryChanged) {
-                                settingsRef.update({ altitude: altFeet, speed: speedKnots })
-                                    .catch(err => console.error("Telemetry sync error:", err));
-                            }
                         }
 
                         const planeIcon = L.divIcon({
@@ -872,7 +848,7 @@
                         });
 
                         const marker = L.marker([ac.lat, ac.lon], { icon: planeIcon });
-                        marker.bindTooltip(`${callsign} (${model}) - ${altFeet}`, { direction: 'top' });
+                        marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
 
                         marker.on('click', () => {
                             selectedCallsign = callsign; // Define o avião para rastreamento ao vivo
@@ -881,21 +857,17 @@
                             document.getElementById('input-aircraft').value = model;
                             document.getElementById('input-country').value = country;
                             document.getElementById('input-route').value = routeStr;
-                            document.getElementById('input-altitude').value = altFeet;
-                            document.getElementById('input-speed').value = speedKnots;
 
                             document.getElementById('display-callsign').innerText = callsign;
                             document.getElementById('display-airline').innerText = getAirlineName(callsign);
                             document.getElementById('display-route').innerHTML = formatRouteWithCities(NO_ROUTE_LABEL);
                             document.getElementById('display-aircraft').innerText = model;
-                            document.getElementById('display-altitude').innerText = altFeet;
-                            document.getElementById('display-speed').innerText = speedKnots;
                             document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
 
-                            statusEl.innerText = `Tracking ${callsign} live (Alt & Spd updating).`;
+                            statusEl.innerText = `Tracking ${callsign} live.`;
                             resolveAircraftRoute(ac).then(route => {
                                 if (selectedCallsign !== callsign) return;
-                                document.getElementById('input-route').value = route;
+                                document.getElementById('input-route').value = getRouteCityLabel(route);
                                 document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
                                 pushSettingsToFirebase();
                             });
@@ -1009,8 +981,6 @@
                 route: rawRoute,
                 country: document.getElementById('input-country').value.trim() || "JP",
                 aircraft: document.getElementById('input-aircraft').value.trim() || "N/A",
-                altitude: document.getElementById('input-altitude').value.trim() || "35000 ft",
-                speed: document.getElementById('input-speed').value.trim() || "480 kts",
                 liveLabel: document.getElementById('input-live-label').value.trim() || "",
                 barWidth: document.getElementById('slider-width').value,
                 barHeight: document.getElementById('slider-height').value
@@ -1062,14 +1032,6 @@
                 document.getElementById('input-aircraft').value = data.aircraft;
                 document.getElementById('display-aircraft').innerText = data.aircraft;
             }
-            if (data.altitude) {
-                document.getElementById('input-altitude').value = data.altitude;
-                document.getElementById('display-altitude').innerText = data.altitude;
-            }
-            if (data.speed) {
-                document.getElementById('input-speed').value = data.speed;
-                document.getElementById('display-speed').innerText = data.speed;
-            }
             if (data.liveLabel !== undefined) {
                 document.getElementById('input-live-label').value = data.liveLabel;
                 document.getElementById('display-live-label').innerText = data.liveLabel;
@@ -1088,7 +1050,7 @@
                     if (selectedCallsign && selectedCallsign !== previousCallsign) {
                         resolveAircraftRoute({ flight: callsign }).then(route => {
                             if (selectedCallsign !== callsign || document.getElementById('input-callsign').value.trim().toUpperCase() !== callsign) return;
-                            document.getElementById('input-route').value = route;
+                            document.getElementById('input-route').value = getRouteCityLabel(route);
                             document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
                         });
                     }
