@@ -358,9 +358,9 @@
             min-width: 0;
         }
 
-        .airline-logo-box {
-            width: clamp(34px, 4vw, 46px);
-            height: clamp(34px, 4vw, 46px);
+        .flag-box {
+            width: clamp(38px, 4vw, 48px);
+            height: clamp(26px, 3vw, 32px);
             flex-shrink: 0;
             border-radius: 4px;
             overflow: hidden;
@@ -371,11 +371,10 @@
             background: #1e293b;
         }
 
-        .airline-logo-box img {
+        .flag-box img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            padding: 2px;
+            object-fit: cover;
         }
 
         .flight-main-info {
@@ -621,8 +620,8 @@
 
             <!-- Center: Flight Tracking Block -->
             <div class="flight-block">
-                <div class="airline-logo-box">
-                    <img id="display-airline-logo" src="https://flagcdn.com/w80/jp.png" alt="Airline logo">
+                <div class="flag-box">
+                    <img id="display-flag-img" src="https://flagcdn.com/w80/jp.png" alt="Country Flag" onerror="this.src='https://flagcdn.com/w80/un.png'">
                 </div>
                 <div class="flight-main-info">
                     <div class="flight-sub-header">
@@ -736,30 +735,6 @@
             "THA": "Thai Airways", "UAL": "United Airlines", "DAL": "Delta Air Lines",
             "AAL": "American Airlines"
         };
-
-        const AIRLINE_LOGO_BASE_URL = "https://raw.githubusercontent.com/Jxck-S/airline-logos/main/flightaware_logos";
-
-        function updateAirlineLogo(callsign, countryCode = "un") {
-            const image = document.getElementById('display-airline-logo');
-            const prefix = (callsign || "").trim().toUpperCase().match(/^[A-Z0-9]{3}/);
-            const fallbackCode = /^[A-Z]{2}$/i.test(countryCode) ? countryCode.toLowerCase() : "un";
-            const fallbackUrl = `https://flagcdn.com/w80/${fallbackCode}.png`;
-
-            if (!prefix) {
-                image.onerror = null;
-                image.src = fallbackUrl;
-                image.alt = `${fallbackCode.toUpperCase()} country flag`;
-                return;
-            }
-
-            image.alt = `${getAirlineName(callsign)} logo`;
-            image.onerror = () => {
-                image.onerror = null;
-                image.src = fallbackUrl;
-                image.alt = `${fallbackCode.toUpperCase()} country flag`;
-            };
-            image.src = `${AIRLINE_LOGO_BASE_URL}/${prefix[0]}.png`;
-        }
 
         let selectedCallsign = null; // Guarda o voo selecionado para atualizar em tempo real
 
@@ -995,7 +970,7 @@
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
             setInterval(refreshRadarFlights, 240000);
-            setInterval(refreshSelectedTelemetry, 180000);
+            setInterval(refreshSelectedTelemetry, 60000);
         }
 
         function deriveCountryFromReg(reg) {
@@ -1056,7 +1031,7 @@
                             document.getElementById('input-aircraft').value = model;
                             document.getElementById('input-country').value = country;
                             document.getElementById('display-aircraft').innerText = model;
-                            updateAirlineLogo(callsign, country);
+                            document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
                             updateFlightTelemetry(ac);
                             if (ac.from && ac.to) {
                                 const routeStr = `${ac.from} → ${ac.to}`;
@@ -1092,7 +1067,7 @@
                             document.getElementById('display-route').innerHTML = formatRouteWithCities(routeStr);
                             document.getElementById('display-aircraft').innerText = model;
                             updateFlightTelemetry(ac);
-                            updateAirlineLogo(callsign, country);
+                            document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
 
                             statusEl.innerText = `Tracking ${callsign} live.`;
                             applyRouteForCallsign(callsign, ac, true);
@@ -1295,7 +1270,6 @@
                 document.getElementById('input-callsign').value = data.callsign;
                 document.getElementById('display-callsign').innerText = data.callsign;
                 document.getElementById('display-airline').innerText = getAirlineName(data.callsign);
-                updateAirlineLogo(data.callsign, data.country || document.getElementById('input-country').value);
             }
             if (data.route) {
                 document.getElementById('input-route').value = data.route;
@@ -1303,7 +1277,7 @@
             }
             if (data.country) {
                 document.getElementById('input-country').value = data.country;
-                updateAirlineLogo(data.callsign || document.getElementById('input-callsign').value, data.country);
+                document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${data.country.toLowerCase()}.png`;
             }
             if (data.aircraft) {
                 document.getElementById('input-aircraft').value = data.aircraft;
@@ -1384,7 +1358,6 @@
                     console.error("Backend health check failed:", err);
                 });
             const initialCallsign = document.getElementById('input-callsign').value;
-            updateAirlineLogo(initialCallsign, document.getElementById('input-country').value);
             if (initialCallsign) applyRouteForCallsign(initialCallsign, { flight: initialCallsign });
             initRadarMap();
             fetchAndApplyWeather(document.getElementById('input-city').value);
