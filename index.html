@@ -663,11 +663,51 @@
     <script>
         const API_BASE_URL = String(window.SKY_STATIONS_API_BASE || "").replace(/\/+$/, "");
         const API_ACCESS_STORAGE_KEY = "skyStationsWorkerPassword";
+        let workerAccessPassword = null;
+
+        function getWorkerAccessPassword() {
+            if (workerAccessPassword !== null) return workerAccessPassword;
+            try {
+                workerAccessPassword = localStorage.getItem(API_ACCESS_STORAGE_KEY) || "";
+            } catch (error) {
+                workerAccessPassword = "";
+                console.error("Could not read Worker password from browser storage:", error);
+            }
+            return workerAccessPassword;
+        }
+
+        function storeWorkerAccessPassword(password) {
+            workerAccessPassword = password;
+            try {
+                localStorage.setItem(API_ACCESS_STORAGE_KEY, password);
+            } catch (error) {
+                console.error("Worker password will only remain active for this page session:", error);
+            }
+        }
+
+        function loadWorkerPasswordFromUrl() {
+            const prefix = "#worker-password=";
+            if (!API_BASE_URL || !window.location.hash.startsWith(prefix)) return;
+
+            let password;
+            try {
+                password = decodeURIComponent(window.location.hash.slice(prefix.length));
+            } catch (error) {
+                console.error("Could not read Worker password from URL fragment:", error);
+                return;
+            }
+            if (!password) return;
+
+            storeWorkerAccessPassword(password);
+            history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+        }
+
+        loadWorkerPasswordFromUrl();
 
         function apiFetch(path, options = {}) {
             const headers = new Headers(options.headers || {});
             if (API_BASE_URL) {
-                const password = localStorage.getItem(API_ACCESS_STORAGE_KEY);
+                const password = getWorkerAccessPassword();
                 if (password) headers.set("X-Overlay-Password", password);
             }
             return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
@@ -875,7 +915,7 @@
             try {
                 if (API_BASE_URL) {
                     if (!key) throw new Error("Enter the private Worker password.");
-                    localStorage.setItem(API_ACCESS_STORAGE_KEY, key);
+                    storeWorkerAccessPassword(key);
                     keyInput.value = "";
                     const response = await apiFetch("/auth/check");
                     const result = await response.json();
@@ -1295,7 +1335,7 @@
                             document.getElementById('api-key-status').innerText = "Worker password not configured";
                         } else if (!health.keyConfigured) {
                             document.getElementById('api-key-status').innerText = "ADSB key missing in Worker";
-                        } else if (localStorage.getItem(API_ACCESS_STORAGE_KEY)) {
+                        } else if (getWorkerAccessPassword()) {
                             document.getElementById('api-key-status').innerText = "Checking Worker password";
                             return apiFetch("/auth/check").then(response => {
                                 document.getElementById('api-key-status').innerText = response.ok
