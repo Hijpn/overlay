@@ -12,6 +12,7 @@
     <!-- Leaflet CSS & JS for Interactive Radar Map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="./config.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap');
@@ -22,6 +23,7 @@
             --bottom-border-color: #F9A53E;
             --bar-width: 92%;
             --bar-height: 82px;
+            --overlay-font-bump: 0px;
         }
 
         * {
@@ -116,7 +118,8 @@
             flex: 1;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             padding: 8px 10px;
             border-radius: 6px;
@@ -128,7 +131,8 @@
             transition: border-color 0.2s;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus {
             border-color: #38bdf8;
         }
 
@@ -302,7 +306,7 @@
         }
 
         .city-title {
-            font-size: clamp(11px, 1.2vw, 15px);
+            font-size: clamp(calc(13px + var(--overlay-font-bump)), calc(1.35vw + var(--overlay-font-bump)), calc(17px + var(--overlay-font-bump)));
             font-weight: 800;
             color: #38bdf8;
             text-transform: uppercase;
@@ -318,14 +322,14 @@
         }
 
         .main-temp {
-            font-size: clamp(20px, 2.5vw, 32px);
+            font-size: clamp(calc(20px + var(--overlay-font-bump)), calc(2.5vw + var(--overlay-font-bump)), calc(32px + var(--overlay-font-bump)));
             font-weight: 800;
             line-height: 1;
             letter-spacing: -0.5px;
         }
 
         .condition-text {
-            font-size: clamp(11px, 1.2vw, 14px);
+            font-size: clamp(calc(11px + var(--overlay-font-bump)), calc(1.2vw + var(--overlay-font-bump)), calc(14px + var(--overlay-font-bump)));
             font-weight: 600;
             color: #cbd5e1;
         }
@@ -333,7 +337,7 @@
         .weather-details {
             display: flex;
             gap: 6px;
-            font-size: clamp(9px, 1vw, 12px);
+            font-size: clamp(calc(9px + var(--overlay-font-bump)), calc(1vw + var(--overlay-font-bump)), calc(12px + var(--overlay-font-bump)));
             font-weight: 600;
             color: #94a3b8;
             margin-top: 3px;
@@ -388,7 +392,7 @@
         }
 
         .callsign-text {
-            font-size: clamp(12px, 1.3vw, 16px);
+            font-size: clamp(calc(12px + var(--overlay-font-bump)), calc(1.3vw + var(--overlay-font-bump)), calc(16px + var(--overlay-font-bump)));
             font-weight: 800;
             letter-spacing: 0.5px;
             line-height: 1;
@@ -396,7 +400,7 @@
         }
 
         .airline-badge {
-            font-size: clamp(9px, 1vw, 11px);
+            font-size: clamp(calc(9px + var(--overlay-font-bump)), calc(1vw + var(--overlay-font-bump)), calc(11px + var(--overlay-font-bump)));
             font-weight: 700;
             color: #38bdf8;
             background: rgba(56, 189, 248, 0.15);
@@ -407,7 +411,7 @@
         }
 
         .route-text {
-            font-size: clamp(14px, 1.8vw, 22px);
+            font-size: clamp(calc(14px + var(--overlay-font-bump)), calc(1.8vw + var(--overlay-font-bump)), calc(22px + var(--overlay-font-bump)));
             font-weight: 800;
             color: #ffffff;
             margin-top: 2px;
@@ -425,8 +429,9 @@
 
         .aircraft-telemetry {
             display: flex;
-            gap: 8px;
-            font-size: clamp(8px, 0.9vw, 10px);
+            flex-wrap: wrap;
+            gap: 4px 8px;
+            font-size: clamp(calc(8px + var(--overlay-font-bump)), calc(0.9vw + var(--overlay-font-bump)), calc(10px + var(--overlay-font-bump)));
             font-weight: 600;
             color: #94a3b8;
             letter-spacing: 0.5px;
@@ -437,6 +442,7 @@
 
         .aircraft-telemetry span {
             color: #e2e8f0;
+            white-space: nowrap;
         }
 
         /* Right: Clock Section with Static Live Indicator */
@@ -467,7 +473,7 @@
         }
 
         .live-text {
-            font-size: clamp(10px, 1.1vw, 12px);
+            font-size: clamp(calc(10px + var(--overlay-font-bump)), calc(1.1vw + var(--overlay-font-bump)), calc(12px + var(--overlay-font-bump)));
             font-weight: 800;
             color: #fca5a5;
             letter-spacing: 0.5px;
@@ -482,7 +488,7 @@
         }
 
         .clock-time {
-            font-size: clamp(22px, 2.8vw, 36px);
+            font-size: clamp(calc(22px + var(--overlay-font-bump)), calc(2.8vw + var(--overlay-font-bump)), calc(36px + var(--overlay-font-bump)));
             font-weight: 800;
             letter-spacing: 0.5px;
             line-height: 1;
@@ -490,7 +496,7 @@
         }
 
         .clock-date {
-            font-size: clamp(10px, 1.1vw, 13px);
+            font-size: clamp(calc(10px + var(--overlay-font-bump)), calc(1.1vw + var(--overlay-font-bump)), calc(13px + var(--overlay-font-bump)));
             font-weight: 600;
             color: #cbd5e1;
             margin-top: 3px;
@@ -526,11 +532,22 @@
                 <input type="range" id="slider-height" min="68" max="120" value="82" oninput="updateBarDimensions()">
             </div>
         </div>
+        <div class="form-group">
+            <label>Overlay Font Size <span id="val-font-size">+0px</span></label>
+            <input type="range" id="slider-font-size" min="0" max="6" step="1" value="0" oninput="updateOverlayFontSize()">
+        </div>
 
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol via Proxy)</span>
+                <span>Live Radar (adsb.lol)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
+            </div>
+            <div class="form-group" style="margin: 8px 10px 4px;">
+                <label><span id="api-key-label">adsb.lol API Key</span> <span id="api-key-status">Not saved</span></label>
+                <div style="display: flex; gap: 4px;">
+                    <input type="password" id="input-api-key" autocomplete="off" placeholder="Cole sua chave aqui">
+                    <button class="btn-mini" id="api-key-save-button" type="button" onclick="saveAdsbApiKey()">Save</button>
+                </div>
             </div>
             <div id="radar-map"></div>
         </div>
@@ -616,6 +633,8 @@
                     </div>
                     <div class="aircraft-telemetry">
                         <span id="display-aircraft">B788</span>
+                        <span id="display-altitude">ALT -- FT</span>
+                        <span id="display-speed">GS -- KT</span>
                     </div>
                 </div>
             </div>
@@ -642,6 +661,18 @@
     </div>
 
     <script>
+        const API_BASE_URL = String(window.SKY_STATIONS_API_BASE || "").replace(/\/+$/, "");
+        const API_ACCESS_STORAGE_KEY = "skyStationsWorkerPassword";
+
+        function apiFetch(path, options = {}) {
+            const headers = new Headers(options.headers || {});
+            if (API_BASE_URL) {
+                const password = localStorage.getItem(API_ACCESS_STORAGE_KEY);
+                if (password) headers.set("X-Overlay-Password", password);
+            }
+            return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+        }
+
         const firebaseConfig = {
             databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         };
@@ -700,23 +731,35 @@
 
         async function resolveAircraftRoute(aircraft) {
             const callsign = (aircraft.flight || "").trim().toUpperCase();
-            let routeLabel = NO_ROUTE_LABEL;
+            let routeLabel = aircraft.from && aircraft.to
+                ? `${aircraft.from} → ${aircraft.to}`
+                : NO_ROUTE_LABEL;
 
             if (callsign.length < 3) return routeLabel;
 
             try {
-                const routeUrl = `https://vrs-standing-data.adsb.lol/routes/${callsign.slice(0, 2)}/${encodeURIComponent(callsign)}.json`;
-                const response = await fetch(routeUrl);
+                const routeUrl = `/route?callsign=${encodeURIComponent(callsign)}`;
+                const response = await apiFetch(routeUrl);
                 if (response.status === 404) return routeLabel;
                 if (!response.ok) throw new Error(`Route lookup HTTP ${response.status}`);
 
                 const route = await response.json();
+                const airports = route._airports || [];
                 for (const airport of route._airports || []) {
                     const city = airport.location || airport.city || airport.municipality;
                     if (!city) continue;
 
                     for (const code of [airport.iata, airport.icao]) {
                         if (code) AIRPORT_CODE_MAP[code.trim().toUpperCase()] = city.trim();
+                    }
+                }
+
+                if (airports.length >= 2) {
+                    const origin = airports[0].location || airports[0].city || airports[0].municipality || airports[0].iata || airports[0].icao;
+                    const destination = airports[airports.length - 1].location || airports[airports.length - 1].city || airports[airports.length - 1].municipality || airports[airports.length - 1].iata || airports[airports.length - 1].icao;
+                    if (origin && destination) {
+                        routeLabel = `${origin} → ${destination}`;
+                        return routeLabel;
                     }
                 }
 
@@ -736,6 +779,57 @@
             }
 
             return routeLabel;
+        }
+
+        async function applyRouteForCallsign(callsign, aircraft, syncSettings = false) {
+            const normalizedCallsign = (callsign || "").trim().toUpperCase();
+            selectedCallsign = normalizedCallsign && normalizedCallsign !== "N/A"
+                ? normalizedCallsign
+                : null;
+
+            if (!selectedCallsign) {
+                updateFlightTelemetry(null);
+                document.getElementById('input-route').value = NO_ROUTE_LABEL;
+                document.getElementById('display-route').innerHTML = formatRouteWithCities(NO_ROUTE_LABEL);
+                return;
+            }
+
+            const trackingCallsign = selectedCallsign;
+            const hasTelemetry = aircraft && (
+                Number.isFinite(aircraft.alt_baro) ||
+                Number.isFinite(aircraft.alt_geom) ||
+                Number.isFinite(aircraft.gs)
+            );
+            if (hasTelemetry) {
+                updateFlightTelemetry(aircraft);
+            } else {
+                updateFlightTelemetry(null);
+                refreshSelectedTelemetry();
+            }
+
+            const route = await resolveAircraftRoute(aircraft || { flight: trackingCallsign });
+            if (selectedCallsign !== trackingCallsign) return;
+
+            const cityRoute = getRouteCityLabel(route);
+            document.getElementById('input-route').value = cityRoute;
+            document.getElementById('display-route').innerHTML = formatRouteWithCities(cityRoute);
+            if (syncSettings) pushSettingsToFirebase();
+        }
+
+        function updateFlightTelemetry(aircraft) {
+            const altitude = aircraft && Number.isFinite(aircraft.alt_baro)
+                ? aircraft.alt_baro
+                : aircraft && Number.isFinite(aircraft.alt_geom)
+                    ? aircraft.alt_geom
+                    : null;
+            const speed = aircraft && Number.isFinite(aircraft.gs) ? aircraft.gs : null;
+
+            document.getElementById('display-altitude').innerText = altitude === null
+                ? aircraft && aircraft.alt_baro === "ground" ? "ALT GROUND" : "ALT -- FT"
+                : `ALT ${Math.round(altitude).toLocaleString('en-US')} FT`;
+            document.getElementById('display-speed').innerText = speed === null
+                ? "GS -- KT"
+                : `GS ${Math.round(speed)} KT`;
         }
 
         let db = null;
@@ -761,10 +855,64 @@
             document.documentElement.style.setProperty('--bar-height', `${heightVal}px`);
         }
 
+        function updateOverlayFontSize() {
+            const increase = Number(document.getElementById('slider-font-size').value);
+            document.getElementById('val-font-size').innerText = `+${increase}px`;
+            document.documentElement.style.setProperty('--overlay-font-bump', `${increase}px`);
+        }
+
         let map = null;
         let aircraftLayer = null;
         let currentLat = 35.1815;
         let currentLon = 136.9066;
+        let radarRefreshInProgress = false;
+        let telemetryRefreshInProgress = false;
+
+        async function saveAdsbApiKey() {
+            const keyInput = document.getElementById('input-api-key');
+            const key = keyInput.value.trim();
+            const statusEl = document.getElementById('status-msg');
+            try {
+                if (API_BASE_URL) {
+                    if (!key) throw new Error("Enter the private Worker password.");
+                    localStorage.setItem(API_ACCESS_STORAGE_KEY, key);
+                    keyInput.value = "";
+                    const response = await apiFetch("/auth/check");
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || `Worker access HTTP ${response.status}`);
+                    document.getElementById('api-key-status').innerText = "Worker connected";
+                    statusEl.innerText = "Cloudflare Worker connected. Scanning...";
+                    refreshRadarFlights();
+                    fetchAndApplyWeather(document.getElementById('input-city').value);
+                    const callsign = document.getElementById('input-callsign').value.trim();
+                    if (callsign) applyRouteForCallsign(callsign, { flight: callsign });
+                    return;
+                }
+
+                const response = await apiFetch("/api/key", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || "Failed to save key");
+
+                keyInput.value = "";
+                document.getElementById('api-key-status').innerText = result.saved ? "Saved in proxy" : "Not saved";
+                statusEl.innerText = result.saved
+                    ? "adsb.lol API key saved. Scanning..."
+                    : "API key removed.";
+                if (result.saved) refreshRadarFlights();
+            } catch (err) {
+                document.getElementById('api-key-status').innerText = API_BASE_URL
+                    ? "Worker password rejected"
+                    : "Proxy unavailable";
+                statusEl.innerText = API_BASE_URL
+                    ? "Worker connection failed. Check the Worker password and Cloudflare settings."
+                    : "Proxy unavailable. Start iniciar_proxy.bat and open http://127.0.0.1:8899/";
+                console.error("API key save error:", err);
+            }
+        }
 
         function initRadarMap() {
             map = L.map('radar-map', {
@@ -781,9 +929,8 @@
 
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
-            
-            // Sem chave da API, consulta a cada 4 minutos para reduzir o risco de HTTP 429.
             setInterval(refreshRadarFlights, 240000);
+            setInterval(refreshSelectedTelemetry, 180000);
         }
 
         function deriveCountryFromReg(reg) {
@@ -808,15 +955,19 @@
 
         async function refreshRadarFlights() {
             const statusEl = document.getElementById('status-msg');
-            if (!map) return;
+            if (!map || radarRefreshInProgress) return;
 
+            radarRefreshInProgress = true;
             const center = map.getCenter();
 
             try {
-                const workerUrl = `https://square-salad-3dab.iharuji.workers.dev/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}`;
-
-                const res = await fetch(workerUrl);
-                if (!res.ok) throw new Error(`Radar HTTP ${res.status}`);
+                const radiusNm = 150;
+                const radarUrl = `/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&radius=${radiusNm}`;
+                const res = await apiFetch(radarUrl);
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({}));
+                    throw new Error(error.error || `Radar HTTP ${res.status}`);
+                }
                 const data = await res.json();
  
                 aircraftLayer.clearLayers();
@@ -834,7 +985,21 @@
                         const model = ac.t || "N/A";
                         const reg = ac.r || "";
                         const track = ac.track || 0;
-                        
+
+                        if (selectedCallsign && callsign === selectedCallsign) {
+                            const country = deriveCountryFromReg(reg);
+                            document.getElementById('input-aircraft').value = model;
+                            document.getElementById('input-country').value = country;
+                            document.getElementById('display-aircraft').innerText = model;
+                            document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
+                            updateFlightTelemetry(ac);
+                            if (ac.from && ac.to) {
+                                const routeStr = `${ac.from} → ${ac.to}`;
+                                document.getElementById('input-route').value = routeStr;
+                                document.getElementById('display-route').innerHTML = formatRouteWithCities(routeStr);
+                            }
+                        }
+
                         let routeStr = NO_ROUTE_LABEL;
                         if (ac.from && ac.to) {
                             routeStr = `${ac.from} → ${ac.to}`;
@@ -851,7 +1016,6 @@
                         marker.bindTooltip(`${callsign} (${model})`, { direction: 'top' });
 
                         marker.on('click', () => {
-                            selectedCallsign = callsign; // Define o avião para rastreamento ao vivo
                             const country = deriveCountryFromReg(reg);
                             document.getElementById('input-callsign').value = callsign;
                             document.getElementById('input-aircraft').value = model;
@@ -860,17 +1024,13 @@
 
                             document.getElementById('display-callsign').innerText = callsign;
                             document.getElementById('display-airline').innerText = getAirlineName(callsign);
-                            document.getElementById('display-route').innerHTML = formatRouteWithCities(NO_ROUTE_LABEL);
+                            document.getElementById('display-route').innerHTML = formatRouteWithCities(routeStr);
                             document.getElementById('display-aircraft').innerText = model;
+                            updateFlightTelemetry(ac);
                             document.getElementById('display-flag-img').src = `https://flagcdn.com/w80/${country.toLowerCase()}.png`;
 
                             statusEl.innerText = `Tracking ${callsign} live.`;
-                            resolveAircraftRoute(ac).then(route => {
-                                if (selectedCallsign !== callsign) return;
-                                document.getElementById('input-route').value = getRouteCityLabel(route);
-                                document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
-                                pushSettingsToFirebase();
-                            });
+                            applyRouteForCallsign(callsign, ac, true);
                         });
 
                         marker.addTo(aircraftLayer);
@@ -880,9 +1040,51 @@
                 statusEl.innerText = `Radar updated: ${count} aircraft found. Click any plane to track live.`;
             } catch (err) {
                 console.error("Radar fetch error:", err);
-                statusEl.innerText = err.message.includes("HTTP 429")
-                    ? "Radar rate limit (HTTP 429)."
-                    : "Radar update failed. Check console for details.";
+                if (err.message.includes("HTTP 401")) {
+                    document.getElementById('api-key-status').innerText = "Access denied (HTTP 401)";
+                    statusEl.innerText = API_BASE_URL
+                        ? "Worker access denied or ADSB.lol rejected its key."
+                        : "ADSB.lol rejected the API key. Paste the raw key and save it again.";
+                } else if (err.message.includes("HTTP 429")) {
+                    statusEl.innerText = "Radar rate limit (HTTP 429).";
+                } else {
+                    statusEl.innerText = "Radar update failed. Check console for details.";
+                }
+            } finally {
+                radarRefreshInProgress = false;
+            }
+        }
+
+        async function refreshSelectedTelemetry() {
+            const callsign = selectedCallsign;
+            if (!callsign || telemetryRefreshInProgress) return;
+
+            telemetryRefreshInProgress = true;
+            try {
+                const response = await apiFetch(`/telemetry?callsign=${encodeURIComponent(callsign)}`);
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || `Telemetry HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (selectedCallsign !== callsign) return;
+                const aircraft = (data.ac || []).find(ac =>
+                    (ac.flight || "").trim().toUpperCase() === callsign
+                );
+                updateFlightTelemetry(aircraft || null);
+            } catch (err) {
+                console.error("Telemetry refresh error:", err);
+                if (err.message.includes("HTTP 401")) {
+                    document.getElementById('api-key-status').innerText = "Access denied (HTTP 401)";
+                    document.getElementById('status-msg').innerText = API_BASE_URL
+                        ? "Worker access denied or ADSB.lol rejected its key."
+                        : "ADSB.lol rejected the API key. Paste the raw key and save it again.";
+                } else if (err.message.includes("HTTP 429")) {
+                    document.getElementById('status-msg').innerText = "Telemetry rate limit (HTTP 429).";
+                }
+            } finally {
+                telemetryRefreshInProgress = false;
             }
         }
 
@@ -930,7 +1132,7 @@
 
             statusEl.innerText = `Searching weather & radar for ${city}...`;
             try {
-                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city.trim())}&count=1&language=en&format=json`);
+                const geoRes = await apiFetch(`/weather/geocode?name=${encodeURIComponent(city.trim())}&count=1&language=en&format=json`);
                 const geoData = await geoRes.json();
                 if (!geoData.results || geoData.results.length === 0) {
                     statusEl.innerText = `City "${city}" not found.`;
@@ -948,7 +1150,7 @@
                     refreshRadarFlights();
                 }
 
-                const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,weather_code`);
+                const weatherRes = await apiFetch(`/weather/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,pressure_msl,wind_speed_10m,wind_direction_10m,weather_code`);
                 const weatherData = await weatherRes.json();
                 
                 const cur = weatherData.current;
@@ -983,11 +1185,16 @@
                 aircraft: document.getElementById('input-aircraft').value.trim() || "N/A",
                 liveLabel: document.getElementById('input-live-label').value.trim() || "",
                 barWidth: document.getElementById('slider-width').value,
-                barHeight: document.getElementById('slider-height').value
+                barHeight: document.getElementById('slider-height').value,
+                fontSizeIncrease: document.getElementById('slider-font-size').value
             };
 
             applySettingsObject(payload);
             fetchAndApplyWeather(cityVal);
+            const callsign = payload.callsign.toUpperCase();
+            if (callsign !== (selectedCallsign || "")) {
+                applyRouteForCallsign(callsign, { flight: callsign });
+            }
 
             if (settingsRef) {
                 settingsRef.set(payload).then(() => {
@@ -1010,6 +1217,10 @@
                 document.getElementById('slider-height').value = data.barHeight;
                 document.getElementById('val-height').innerText = `${data.barHeight}px`;
                 document.documentElement.style.setProperty('--bar-height', `${data.barHeight}px`);
+            }
+            if (data.fontSizeIncrease !== undefined) {
+                document.getElementById('slider-font-size').value = data.fontSizeIncrease;
+                updateOverlayFontSize();
             }
             if (data.city) {
                 document.getElementById('input-city').value = data.city;
@@ -1048,11 +1259,7 @@
                     const callsign = (data.callsign || "").trim().toUpperCase();
                     selectedCallsign = callsign && callsign !== "N/A" ? callsign : null;
                     if (selectedCallsign && selectedCallsign !== previousCallsign) {
-                        resolveAircraftRoute({ flight: callsign }).then(route => {
-                            if (selectedCallsign !== callsign || document.getElementById('input-callsign').value.trim().toUpperCase() !== callsign) return;
-                            document.getElementById('input-route').value = getRouteCityLabel(route);
-                            document.getElementById('display-route').innerHTML = formatRouteWithCities(route);
-                        });
+                        applyRouteForCallsign(callsign, { flight: callsign });
                     }
                 }
             });
@@ -1071,6 +1278,47 @@
         setInterval(updateClock, 1000);
         updateClock();
         window.onload = () => {
+            document.getElementById('api-key-status').innerText = "Not saved";
+            if (API_BASE_URL) {
+                document.getElementById('api-key-label').innerText = "Private Cloudflare Worker password";
+                document.getElementById('input-api-key').placeholder = "Enter your private Worker password";
+                document.getElementById('api-key-save-button').innerText = "Connect";
+            }
+            apiFetch("/health")
+                .then(response => {
+                    if (!response.ok) throw new Error(`Proxy health HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(health => {
+                    if (API_BASE_URL) {
+                        if (!health.passwordConfigured) {
+                            document.getElementById('api-key-status').innerText = "Worker password not configured";
+                        } else if (!health.keyConfigured) {
+                            document.getElementById('api-key-status').innerText = "ADSB key missing in Worker";
+                        } else if (localStorage.getItem(API_ACCESS_STORAGE_KEY)) {
+                            document.getElementById('api-key-status').innerText = "Checking Worker password";
+                            return apiFetch("/auth/check").then(response => {
+                                document.getElementById('api-key-status').innerText = response.ok
+                                    ? "Worker connected"
+                                    : "Enter valid Worker password";
+                            });
+                        } else {
+                            document.getElementById('api-key-status').innerText = "Worker password required";
+                        }
+                    } else {
+                        document.getElementById('api-key-status').innerText = health.keyConfigured
+                            ? "Key loaded in proxy"
+                            : "Not saved";
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('api-key-status').innerText = API_BASE_URL
+                        ? "Cloudflare Worker unavailable"
+                        : "Proxy unavailable";
+                    console.error("Backend health check failed:", err);
+                });
+            const initialCallsign = document.getElementById('input-callsign').value;
+            if (initialCallsign) applyRouteForCallsign(initialCallsign, { flight: initialCallsign });
             initRadarMap();
             fetchAndApplyWeather(document.getElementById('input-city').value);
         };
