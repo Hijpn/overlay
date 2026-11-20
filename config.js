@@ -1,0 +1,3 @@
+// Set this to your deployed Cloudflare Worker URL, without a trailing slash.
+// Leave it empty to use the local Python proxy.
+window.SKY_STATIONS_API_BASE = "https://square-salad-3dab.iharuji.workers.dev";
