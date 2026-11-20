@@ -539,11 +539,11 @@
 
         <div id="radar-container">
             <div id="radar-header">
-                <span>Live Radar (adsb.lol)</span>
+                <span>Live Radar (FlyItalyADSB)</span>
                 <button class="btn-mini" onclick="refreshRadarFlights()">Scan Area</button>
             </div>
             <div class="form-group" style="margin: 8px 10px 4px;">
-                <label><span id="api-key-label">adsb.lol API Key</span> <span id="api-key-status">Not saved</span></label>
+                <label><span id="api-key-label">FlyItalyADSB API Key</span> <span id="api-key-status">Not saved</span></label>
                 <div style="display: flex; gap: 4px;">
                     <input type="password" id="input-api-key" autocomplete="off" placeholder="Cole sua chave aqui">
                     <button class="btn-mini" id="api-key-save-button" type="button" onclick="saveAdsbApiKey()">Save</button>
@@ -636,6 +636,10 @@
                         <span id="display-altitude">ALT -- FT</span>
                         <span id="display-speed">GS -- KT</span>
                     </div>
+                    <a href="https://flyitalyadsb.com" target="_blank" rel="noopener noreferrer"
+                       style="font-size: 7px; color: #94a3b8; margin-top: 1px; text-decoration: none;">
+                        Flight data: FlyItalyADSB (flyitalyadsb.com), CC BY-SA 4.0
+                    </a>
                 </div>
             </div>
 
@@ -940,7 +944,7 @@
                 keyInput.value = "";
                 document.getElementById('api-key-status').innerText = result.saved ? "Saved in proxy" : "Not saved";
                 statusEl.innerText = result.saved
-                    ? "adsb.lol API key saved. Scanning..."
+                    ? "FlyItalyADSB API key saved. Scanning..."
                     : "API key removed.";
                 if (result.saved) refreshRadarFlights();
             } catch (err) {
@@ -1001,12 +1005,12 @@
             const center = map.getCenter();
 
             try {
-                const radiusNm = 150;
-                const radarUrl = `/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&radius=${radiusNm}`;
+                const distanceKm = 278;
+                const radarUrl = `/radar?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&dist=${distanceKm}`;
                 const res = await apiFetch(radarUrl);
                 if (!res.ok) {
                     const error = await res.json().catch(() => ({}));
-                    throw new Error(error.error || `Radar HTTP ${res.status}`);
+                    throw new Error(`Radar HTTP ${res.status}: ${error.error || "Request failed"}`);
                 }
                 const data = await res.json();
  
@@ -1083,8 +1087,8 @@
                 if (err.message.includes("HTTP 401")) {
                     document.getElementById('api-key-status').innerText = "Access denied (HTTP 401)";
                     statusEl.innerText = API_BASE_URL
-                        ? "Worker access denied or ADSB.lol rejected its key."
-                        : "ADSB.lol rejected the API key. Paste the raw key and save it again.";
+                        ? "Worker access denied or FlyItalyADSB rejected its key."
+                        : "FlyItalyADSB rejected the API key. Paste the raw key and save it again.";
                 } else if (err.message.includes("HTTP 429")) {
                     statusEl.innerText = "Radar rate limit (HTTP 429).";
                 } else {
@@ -1104,12 +1108,13 @@
                 const response = await apiFetch(`/telemetry?callsign=${encodeURIComponent(callsign)}`);
                 if (!response.ok) {
                     const error = await response.json().catch(() => ({}));
-                    throw new Error(error.error || `Telemetry HTTP ${response.status}`);
+                    throw new Error(`Telemetry HTTP ${response.status}: ${error.error || "Request failed"}`);
                 }
 
                 const data = await response.json();
                 if (selectedCallsign !== callsign) return;
-                const aircraft = (data.ac || []).find(ac =>
+                const aircraftList = Array.isArray(data.ac) ? data.ac : data.hex ? [data] : [];
+                const aircraft = aircraftList.find(ac =>
                     (ac.flight || "").trim().toUpperCase() === callsign
                 );
                 updateFlightTelemetry(aircraft || null);
@@ -1118,8 +1123,8 @@
                 if (err.message.includes("HTTP 401")) {
                     document.getElementById('api-key-status').innerText = "Access denied (HTTP 401)";
                     document.getElementById('status-msg').innerText = API_BASE_URL
-                        ? "Worker access denied or ADSB.lol rejected its key."
-                        : "ADSB.lol rejected the API key. Paste the raw key and save it again.";
+                        ? "Worker access denied or FlyItalyADSB rejected its key."
+                        : "FlyItalyADSB rejected the API key. Paste the raw key and save it again.";
                 } else if (err.message.includes("HTTP 429")) {
                     document.getElementById('status-msg').innerText = "Telemetry rate limit (HTTP 429).";
                 }
@@ -1334,7 +1339,7 @@
                         if (!health.passwordConfigured) {
                             document.getElementById('api-key-status').innerText = "Worker password not configured";
                         } else if (!health.keyConfigured) {
-                            document.getElementById('api-key-status').innerText = "ADSB key missing in Worker";
+                            document.getElementById('api-key-status').innerText = "FlyItalyADSB key missing in Worker";
                         } else if (getWorkerAccessPassword()) {
                             document.getElementById('api-key-status').innerText = "Checking Worker password";
                             return apiFetch("/auth/check").then(response => {
