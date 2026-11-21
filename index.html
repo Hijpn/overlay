@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sky Stations - Live Broadcast Overlay</title>
+    <script>
+        if (new URLSearchParams(window.location.search).get("view") === "control") {
+            document.documentElement.classList.add("control-mode");
+            document.title = "Sky Stations - Control Panel";
+        }
+    </script>
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -234,13 +240,64 @@
             font-weight: 600;
         }
 
+        html:not(.control-mode) #control-panel {
+            display: none;
+        }
+
+        html.control-mode body {
+            width: 100%;
+            height: auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 16px;
+            background: #0b1728;
+        }
+
+        html.control-mode #control-panel {
+            position: relative;
+            top: auto;
+            left: auto;
+            width: min(100%, 720px);
+            max-width: none;
+            max-height: none;
+            overflow: visible;
+            margin: 0 auto;
+            padding: clamp(14px, 3vw, 24px);
+            opacity: 1;
+            pointer-events: auto;
+            transform: none;
+        }
+
+        html.control-mode #overlay-wrapper {
+            display: none;
+        }
+
+        .panel-link {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: #e2e8f0;
+            background: #334155;
+            font-size: 10px;
+            font-weight: 800;
+            text-decoration: none;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .panel-link:hover {
+            background: #475569;
+        }
+
         /* ================= BROADCAST OVERLAY RESPONSIVO ================= */
         .overlay-wrapper {
             position: fixed;
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            width: var(--bar-width, 92%);
+            width: min(var(--bar-width, 92%), calc(100vw - 16px));
             max-width: 1600px;
             transition: width 0.1s ease;
         }
@@ -287,14 +344,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
             border-radius: 8px;
             transition: transform 0.2s ease, filter 0.2s ease;
-        }
-
-        .weather-icon:hover {
-            transform: scale(1.1);
-            filter: brightness(1.2);
         }
 
         .weather-info {
@@ -511,6 +562,100 @@
                 margin: 0 6px;
             }
         }
+
+        @media (max-width: 560px) {
+            html.control-mode body {
+                padding: 8px;
+            }
+
+            html.control-mode #control-panel {
+                width: 100%;
+                border-radius: 10px;
+            }
+
+            .panel-header {
+                gap: 8px;
+            }
+
+            .panel-header h3 {
+                font-size: 13px;
+                line-height: 1.4;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .form-row .form-group {
+                min-width: 0;
+            }
+
+            input[type="text"],
+            input[type="password"] {
+                min-width: 0;
+                font-size: 16px;
+            }
+
+            input[type="range"] {
+                min-height: 32px;
+            }
+
+            .btn-row {
+                flex-direction: column;
+            }
+
+            #radar-map {
+                height: 190px;
+            }
+
+            .overlay-wrapper {
+                bottom: 8px;
+            }
+
+            .broadcast-bar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-areas:
+                    "weather clock"
+                    "flight flight";
+                gap: 8px;
+                height: auto;
+                min-height: 112px;
+                padding: 10px;
+            }
+
+            .weather-section {
+                grid-area: weather;
+            }
+
+            .flight-block {
+                grid-area: flight;
+                justify-content: flex-start;
+                min-width: 0;
+                padding-top: 7px;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .flight-main-info {
+                min-width: 0;
+                overflow: hidden;
+            }
+
+            .route-text,
+            .aircraft-telemetry {
+                overflow: hidden;
+            }
+
+            .clock-section {
+                grid-area: clock;
+                gap: 6px;
+            }
+
+            .divider-v {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -519,7 +664,7 @@
     <div id="control-panel">
         <div class="panel-header">
             <h3>Sky Stations • Control Panel</h3>
-            <button class="main-btn btn-secondary" style="flex:0; padding:4px 10px;" onclick="togglePanel()">Hide</button>
+            <a class="panel-link" href="./" target="_blank" rel="noopener noreferrer">Open overlay</a>
         </div>
 
         <div class="form-row">
@@ -593,7 +738,7 @@
             <button class="main-btn btn-orange" onclick="pushSettingsToFirebase()">Update & Sync Overlay</button>
             <button class="main-btn btn-secondary" onclick="toggleChroma()">Chroma Green</button>
         </div>
-        <div class="status-text" id="status-msg">Ready. Click weather icon anytime to open/close.</div>
+        <div class="status-text" id="status-msg">Ready. Click Update &amp; Sync Overlay to publish your changes.</div>
     </div>
 
     <!-- Main Broadcast Overlay -->
@@ -601,7 +746,7 @@
         <div class="broadcast-bar">
             <!-- Left: Weather Section -->
             <div class="weather-section">
-                <div class="weather-icon" id="weather-icon" onclick="togglePanel()" title="Click to open settings"></div>
+                <div class="weather-icon" id="weather-icon"></div>
                 <div class="weather-info">
                     <div class="city-title" id="display-city-name">Nagoya</div>
                     <div class="weather-top-row">
@@ -665,6 +810,7 @@
     </div>
 
     <script>
+        const IS_CONTROL_MODE = document.documentElement.classList.contains("control-mode");
         const API_BASE_URL = String(window.SKY_STATIONS_API_BASE || "").replace(/\/+$/, "");
         const API_ACCESS_STORAGE_KEY = "skyStationsWorkerPassword";
         let workerAccessPassword = null;
@@ -1142,14 +1288,6 @@
 
         document.getElementById('weather-icon').innerHTML = weatherIcons.partlyCloudy;
 
-        function togglePanel() {
-            const panel = document.getElementById('control-panel');
-            panel.classList.toggle('show');
-            if (panel.classList.contains('show') && map) {
-                setTimeout(() => map.invalidateSize(), 250);
-            }
-        }
-
         function toggleChroma() {
             document.body.classList.toggle('chroma-green');
         }
@@ -1364,7 +1502,7 @@
                 });
             const initialCallsign = document.getElementById('input-callsign').value;
             if (initialCallsign) applyRouteForCallsign(initialCallsign, { flight: initialCallsign });
-            initRadarMap();
+            if (IS_CONTROL_MODE) initRadarMap();
             fetchAndApplyWeather(document.getElementById('input-city').value);
         };
     </script>
