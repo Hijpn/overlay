@@ -1175,7 +1175,6 @@
             aircraftLayer = L.layerGroup().addTo(map);
             refreshRadarFlights();
             setInterval(refreshRadarFlights, 240000);
-            setInterval(refreshSelectedTelemetry, 60000);
         }
 
         function deriveCountryFromReg(reg) {
@@ -1517,6 +1516,7 @@
             document.getElementById('display-date').innerText = now.toLocaleDateString('en-US', options);
         }
 
+        setInterval(refreshSelectedTelemetry, 60000);
         setInterval(updateClock, 1000);
         updateClock();
         window.onload = () => {
