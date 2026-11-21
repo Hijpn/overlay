@@ -214,6 +214,11 @@
             letter-spacing: 0.5px;
         }
 
+        button.clock-toggle-button {
+            width: 100%;
+            min-height: 40px;
+        }
+
         .btn-orange {
             background: #F9A53E;
             color: #0d1b2a;
@@ -507,6 +512,11 @@
             min-width: 0;
         }
 
+        #overlay-wrapper.clock-hidden .clock-section,
+        #overlay-wrapper.clock-hidden .flight-block + .divider-v {
+            display: none;
+        }
+
         .live-indicator {
             display: flex;
             align-items: center;
@@ -652,6 +662,13 @@
                 gap: 6px;
             }
 
+            #overlay-wrapper.clock-hidden .broadcast-bar {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-areas:
+                    "weather"
+                    "flight";
+            }
+
             .divider-v {
                 display: none;
             }
@@ -734,6 +751,12 @@
             <input type="text" id="input-live-label" value="LIVE NOW" placeholder="Ex: LIVE NOW, ON AIR...">
         </div>
 
+        <div class="form-group">
+            <label>Clock and date in overlay</label>
+            <button class="main-btn btn-secondary clock-toggle-button" id="clock-toggle-button" type="button"
+                    aria-pressed="true" onclick="toggleClockVisibility()">Hide clock &amp; date</button>
+        </div>
+
         <div class="btn-row">
             <button class="main-btn btn-orange" onclick="pushSettingsToFirebase()">Update & Sync Overlay</button>
             <button class="main-btn btn-secondary" onclick="toggleChroma()">Chroma Green</button>
@@ -811,6 +834,7 @@
 
     <script>
         const IS_CONTROL_MODE = document.documentElement.classList.contains("control-mode");
+        let clockIsVisible = true;
         const API_BASE_URL = String(window.SKY_STATIONS_API_BASE || "").replace(/\/+$/, "");
         const API_ACCESS_STORAGE_KEY = "skyStationsWorkerPassword";
         let workerAccessPassword = null;
@@ -1049,6 +1073,37 @@
             const increase = Number(document.getElementById('slider-font-size').value);
             document.getElementById('val-font-size').innerText = `+${increase}px`;
             document.documentElement.style.setProperty('--overlay-font-bump', `${increase}px`);
+        }
+
+        function setClockVisibility(visible) {
+            clockIsVisible = visible;
+            document.getElementById('overlay-wrapper').classList.toggle('clock-hidden', !visible);
+
+            const button = document.getElementById('clock-toggle-button');
+            button.textContent = visible ? 'Hide clock & date' : 'Show clock & date';
+            button.setAttribute('aria-pressed', String(visible));
+        }
+
+        function toggleClockVisibility() {
+            const visible = !clockIsVisible;
+            setClockVisibility(visible);
+
+            const status = document.getElementById('status-msg');
+            if (!settingsRef) {
+                status.innerText = 'Clock changed locally, but Firebase is unavailable.';
+                return;
+            }
+
+            settingsRef.update({ showClock: visible })
+                .then(() => {
+                    status.innerText = visible
+                        ? 'Clock and date are visible and synced.'
+                        : 'Clock and date are hidden and synced.';
+                })
+                .catch((error) => {
+                    console.error('Could not sync clock visibility:', error);
+                    status.innerText = 'Clock changed locally, but syncing failed.';
+                });
         }
 
         let map = null;
@@ -1369,7 +1424,8 @@
                 liveLabel: document.getElementById('input-live-label').value.trim() || "",
                 barWidth: document.getElementById('slider-width').value,
                 barHeight: document.getElementById('slider-height').value,
-                fontSizeIncrease: document.getElementById('slider-font-size').value
+                fontSizeIncrease: document.getElementById('slider-font-size').value,
+                showClock: clockIsVisible
             };
 
             applySettingsObject(payload);
@@ -1404,6 +1460,9 @@
             if (data.fontSizeIncrease !== undefined) {
                 document.getElementById('slider-font-size').value = data.fontSizeIncrease;
                 updateOverlayFontSize();
+            }
+            if (typeof data.showClock === 'boolean') {
+                setClockVisibility(data.showClock);
             }
             if (data.city) {
                 document.getElementById('input-city').value = data.city;
