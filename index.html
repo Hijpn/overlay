@@ -100,6 +100,12 @@
             margin-bottom: 10px;
         }
 
+        .form-hint {
+            margin-top: 4px;
+            color: #94a3b8;
+            font-size: 10px;
+        }
+
         .form-group label {
             display: flex;
             justify-content: space-between;
@@ -730,6 +736,13 @@
         </div>
 
         <div class="form-group">
+            <label>Altitude and speed API interval <span id="val-telemetry-interval">60s</span></label>
+            <input type="range" id="slider-telemetry-interval" min="10" max="60" step="10" value="60"
+                   oninput="updateTelemetryIntervalLabel()">
+            <div class="form-hint">Shorter intervals use more API requests.</div>
+        </div>
+
+        <div class="form-group">
             <label>Route Display Label (Auto-City)</label>
             <input type="text" id="input-route" value="N/A → N/A" placeholder="Auto from ADS-B; N/A if unavailable">
         </div>
@@ -835,6 +848,8 @@
     <script>
         const IS_CONTROL_MODE = document.documentElement.classList.contains("control-mode");
         let clockIsVisible = true;
+        let telemetryRefreshTimer = null;
+        let telemetryIntervalSeconds = 60;
         const API_BASE_URL = String(window.SKY_STATIONS_API_BASE || "").replace(/\/+$/, "");
         const API_ACCESS_STORAGE_KEY = "skyStationsWorkerPassword";
         let workerAccessPassword = null;
@@ -1018,7 +1033,7 @@
                 updateFlightTelemetry(aircraft);
             } else {
                 updateFlightTelemetry(null);
-                refreshSelectedTelemetry();
+                if (!IS_CONTROL_MODE) refreshSelectedTelemetry();
             }
 
             const route = await resolveAircraftRoute(aircraft || { flight: trackingCallsign });
@@ -1073,6 +1088,28 @@
             const increase = Number(document.getElementById('slider-font-size').value);
             document.getElementById('val-font-size').innerText = `+${increase}px`;
             document.documentElement.style.setProperty('--overlay-font-bump', `${increase}px`);
+        }
+
+        function updateTelemetryIntervalLabel() {
+            const seconds = document.getElementById('slider-telemetry-interval').value;
+            document.getElementById('val-telemetry-interval').innerText = `${seconds}s`;
+        }
+
+        function setTelemetryRefreshInterval(value) {
+            const requestedSeconds = Number(value);
+            const seconds = Number.isFinite(requestedSeconds) && requestedSeconds >= 10 && requestedSeconds <= 60
+                ? Math.round(requestedSeconds / 10) * 10
+                : 60;
+            const changed = seconds !== telemetryIntervalSeconds;
+            telemetryIntervalSeconds = seconds;
+
+            const slider = document.getElementById('slider-telemetry-interval');
+            slider.value = String(seconds);
+            updateTelemetryIntervalLabel();
+
+            if (IS_CONTROL_MODE || (!changed && telemetryRefreshTimer !== null)) return;
+            if (telemetryRefreshTimer !== null) clearInterval(telemetryRefreshTimer);
+            telemetryRefreshTimer = setInterval(refreshSelectedTelemetry, seconds * 1000);
         }
 
         function setClockVisibility(visible) {
@@ -1424,7 +1461,8 @@
                 barWidth: document.getElementById('slider-width').value,
                 barHeight: document.getElementById('slider-height').value,
                 fontSizeIncrease: document.getElementById('slider-font-size').value,
-                showClock: clockIsVisible
+                showClock: clockIsVisible,
+                telemetryIntervalSeconds: Number(document.getElementById('slider-telemetry-interval').value)
             };
 
             applySettingsObject(payload);
@@ -1462,6 +1500,9 @@
             }
             if (typeof data.showClock === 'boolean') {
                 setClockVisibility(data.showClock);
+            }
+            if (data.telemetryIntervalSeconds !== undefined) {
+                setTelemetryRefreshInterval(data.telemetryIntervalSeconds);
             }
             if (data.city) {
                 document.getElementById('input-city').value = data.city;
@@ -1516,7 +1557,7 @@
             document.getElementById('display-date').innerText = now.toLocaleDateString('en-US', options);
         }
 
-        setInterval(refreshSelectedTelemetry, 60000);
+        setTelemetryRefreshInterval(telemetryIntervalSeconds);
         setInterval(updateClock, 1000);
         updateClock();
         window.onload = () => {
