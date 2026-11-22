@@ -372,12 +372,12 @@
           <label for="answer-font-size">
             <span class="range-heading">
               <span>Answer options</span>
-              <output class="range-output" id="answer-font-size-output" for="answer-font-size">22 px</output>
+              <output class="range-output" id="answer-font-size-output" for="answer-font-size">44 px</output>
             </span>
-            <input id="answer-font-size" type="range" min="18" max="50" step="1" value="22" disabled>
+            <input id="answer-font-size" type="range" min="18" max="80" step="1" value="44" disabled>
           </label>
         </div>
-        <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Adjust either size up to 50 px. Changes sync to the overlay.</p>
+        <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Questions go up to 50 px; answers go up to 80 px. Changes sync live.</p>
       </section>
 
       <section class="card">
@@ -524,7 +524,7 @@
       }
 
       if (Object.prototype.hasOwnProperty.call(sizes, "answer")) {
-        if (!Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 50) {
+        if (!Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 80) {
           setFontSettingsFeedback("Firebase returned an invalid answer size.", "error");
           console.error("Invalid Firebase answer font size:", sizes.answer);
           return;

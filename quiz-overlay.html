@@ -19,7 +19,7 @@
       --panel: rgba(5, 15, 23, 0.96);
       --line: rgba(126, 207, 213, 0.28);
       --question-size: 40px;
-      --answer-size: 22px;
+      --answer-size: 44px;
     }
 
     .header-controls {
@@ -649,9 +649,9 @@
       <div class="text-setting">
         <label class="setting-label" for="answer-size">
           <span>Answer options</span>
-          <output class="setting-value" id="answer-size-value" for="answer-size">22 px</output>
+          <output class="setting-value" id="answer-size-value" for="answer-size">44 px</output>
         </label>
-        <input id="answer-size" type="range" min="18" max="50" step="1" value="22">
+        <input id="answer-size" type="range" min="18" max="80" step="1" value="44">
       </div>
 
       <div class="settings-actions">
@@ -715,7 +715,7 @@
     const questionSizeValue = document.getElementById("question-size-value");
     const answerSizeValue = document.getElementById("answer-size-value");
     const settingsStatus = document.getElementById("settings-status");
-    const defaultTextSizes = { question: 40, answer: 22 };
+    const defaultTextSizes = { question: 40, answer: 44 };
     const textSettingsKey = "sky-stations-quiz-text-sizes";
 
     let timerId = 0;
@@ -745,7 +745,7 @@
       }
 
       if (!sizes || !Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 50 ||
-          !Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 50) {
+          !Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 80) {
         settingsStatus.textContent = "Saved text sizes are invalid. Defaults are active.";
         return defaultTextSizes;
       }
@@ -790,7 +790,7 @@
       }
 
       if (Object.prototype.hasOwnProperty.call(sizes, "answer")) {
-        if (Number.isInteger(sizes.answer) && sizes.answer >= 18 && sizes.answer <= 50) {
+        if (Number.isInteger(sizes.answer) && sizes.answer >= 18 && sizes.answer <= 80) {
           answerSizeSlider.value = String(sizes.answer);
           updated = true;
         } else {
