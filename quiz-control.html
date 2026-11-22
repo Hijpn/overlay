@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131c">
+  <title>Sky Stations - Quiz Control</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: #07131c;
+      color: #f1f7f8;
+      font-synthesis: none;
+      --panel: rgba(15, 31, 40, 0.96);
+      --line: rgba(147, 184, 193, 0.2);
+      --muted: #9db2b9;
+      --cyan: #66e4e6;
+      --amber: #ffad63;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px 16px 48px;
+      background:
+        radial-gradient(ellipse at 10% 0%, rgba(35, 91, 101, 0.22), transparent 38%),
+        radial-gradient(ellipse at 100% 35%, rgba(137, 76, 43, 0.14), transparent 34%),
+        #07131c;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .shell {
+      width: min(860px, 100%);
+      margin: 0 auto;
+    }
+
+    .topbar, .connection-card, .card, .live-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.18);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 22px;
+      border-top: 3px solid var(--amber);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--cyan);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .signal {
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 13px rgba(102, 228, 230, 0.72);
+    }
+
+    .topbar h1 {
+      margin: 6px 0 0;
+      color: #f1f7f8;
+      font-size: clamp(22px, 4vw, 30px);
+      letter-spacing: -0.035em;
+    }
+
+    .open-overlay {
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border: 1px solid rgba(102, 228, 230, 0.42);
+      border-radius: 5px;
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .open-overlay:hover { background: rgba(31, 74, 81, 0.52); }
+
+    .connection-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 16px 0;
+      padding: 14px 18px;
+    }
+
+    .connection-dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 10px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: #ff8278;
+      box-shadow: 0 0 10px rgba(255, 130, 120, 0.45);
+    }
+
+    .connection-card.connected .connection-dot {
+      background: #75e6ae;
+      box-shadow: 0 0 10px rgba(117, 230, 174, 0.55);
+    }
+
+    .connection-copy { min-width: 0; }
+
+    .connection-title {
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .connection-detail {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .card, .live-card { padding: 21px; }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0 0 16px;
+      font-size: 17px;
+      letter-spacing: 0.01em;
+    }
+
+    .step {
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .answers-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      min-width: 0;
+      gap: 7px;
+      color: #dce8ea;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    input, select, textarea {
+      width: 100%;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid rgba(147, 184, 193, 0.28);
+      border-radius: 5px;
+      outline: none;
+      background: #0a1a23;
+      color: #f1f7f8;
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 76px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(102, 228, 230, 0.13);
+    }
+
+    input[type="range"] {
+      padding: 5px 0;
+      accent-color: var(--amber);
+    }
+
+    .card + .card { margin-top: 14px; }
+
+    .range-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .range-output {
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .action-button {
+      min-height: 46px;
+      padding: 11px 16px;
+      border: 1px solid rgba(102, 228, 230, 0.46);
+      border-radius: 5px;
+      background: rgba(31, 74, 81, 0.5);
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.035em;
+      cursor: pointer;
+    }
+
+    .action-button.primary {
+      border-color: #ffad63;
+      background: #d87539;
+      color: #fff8f1;
+    }
+
+    .action-button.danger {
+      border-color: rgba(255, 130, 120, 0.52);
+      background: rgba(112, 42, 43, 0.28);
+      color: #ffaaa3;
+    }
+
+    .action-button:hover:not(:disabled) { filter: brightness(1.13); }
+    .action-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .action-button:focus-visible, .open-overlay:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px;
+    }
+
+    .feedback {
+      min-height: 22px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .feedback.error { color: #ffaaa3; }
+    .feedback.success { color: #75e6ae; }
+
+    .live-card { margin-top: 14px; }
+
+    .live-summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 12px 10px 30px; }
+      .topbar { align-items: flex-start; padding: 16px; }
+      .open-overlay { padding: 9px 10px; font-size: 12px; }
+      .card, .live-card { padding: 16px; }
+      .field-grid, .answers-grid { grid-template-columns: 1fr; }
+      .button-row { display: grid; grid-template-columns: 1fr; }
+      .action-button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
+        <h1>Live Quiz Control</h1>
+      </div>
+      <a class="open-overlay" href="./quiz-overlay.html" target="_blank" rel="noopener">Open overlay</a>
+    </header>
+
+    <section class="connection-card" id="connection-card" aria-live="polite">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <div class="connection-copy">
+        <strong class="connection-title" id="connection-title">Connecting to Firebase...</strong>
+        <p class="connection-detail" id="connection-detail">The overlay will update when you publish a question.</p>
+      </div>
+    </section>
+
+    <form id="quiz-form">
+      <section class="card">
+        <h2 class="section-heading"><span class="step">01</span>Question</h2>
+        <div class="field-grid">
+          <label class="full-width" for="sample-question">
+            Load a sample question
+            <select id="sample-question">
+              <option value="">Custom question</option>
+            </select>
+          </label>
+          <label class="full-width" for="question">Question text
+            <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>
+          </label>
+          <label for="question-number">Question number
+            <input id="question-number" type="number" min="1" max="999" value="1" required>
+          </label>
+          <label for="total-questions">Total questions
+            <input id="total-questions" type="number" min="1" max="999" value="6" required>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading"><span class="step">02</span>Answer options</h2>
+        <div class="answers-grid">
+          <label for="answer-0">Option 1
+            <input id="answer-0" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-1">Option 2
+            <input id="answer-1" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-2">Option 3
+            <input id="answer-2" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-3">Option 4
+            <input id="answer-3" type="text" maxlength="100" required>
+          </label>
+          <label class="full-width" for="correct-answer">Correct answer
+            <select id="correct-answer">
+              <option value="0">Option 1</option>
+              <option value="1">Option 2</option>
+              <option value="2">Option 3</option>
+              <option value="3">Option 4</option>
+            </select>
+          </label>
+          <label class="full-width" for="explanation">Answer explanation (optional)
+            <textarea id="explanation" maxlength="240" placeholder="Shown when the answer is revealed"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading"><span class="step">03</span>Timer</h2>
+        <label for="duration">
+          <span class="range-heading">
+            <span>Answer time</span>
+            <output class="range-output" id="duration-output" for="duration">20 seconds</output>
+          </span>
+          <input id="duration" type="range" min="5" max="120" step="1" value="20">
+        </label>
+        <div class="button-row">
+          <button class="action-button primary" id="start-question" type="submit" disabled>Publish &amp; start timer</button>
+          <button class="action-button" id="reveal-answer" type="button" disabled>Reveal answer</button>
+          <button class="action-button danger" id="clear-overlay" type="button" disabled>Clear overlay</button>
+        </div>
+        <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+      </section>
+    </form>
+
+    <section class="live-card">
+      <h2 class="section-heading"><span class="step">LIVE</span>Overlay status</h2>
+      <p class="live-summary" id="live-summary">Waiting for the Firebase connection.</p>
+    </section>
+  </main>
+
+  <script>
+    const sampleQuestions = [
+      {
+        question: "Which manufacturer builds the 737 and 787 Dreamliner?",
+        answers: ["Airbus", "Boeing", "Embraer", "Bombardier"],
+        correctIndex: 1,
+        explanation: "The 737 and 787 Dreamliner are aircraft built by the American manufacturer Boeing."
+      },
+      {
+        question: "Which aircraft is known as the Superjumbo?",
+        answers: ["Airbus A380", "Boeing 757", "Embraer E195", "Airbus A321"],
+        correctIndex: 0,
+        explanation: "The Airbus A380 is the largest passenger airliner in service."
+      },
+      {
+        question: "What does transponder code 7700 generally indicate?",
+        answers: ["Training flight", "General emergency", "Communication failure", "State aircraft"],
+        correctIndex: 1,
+        explanation: "Code 7700 is used to signal a general emergency."
+      },
+      {
+        question: "Which Brazilian manufacturer builds the E-Jet family?",
+        answers: ["Cessna", "ATR", "Embraer", "Pilatus"],
+        correctIndex: 2,
+        explanation: "Embraer builds the E-Jet and E-Jet E2 families."
+      },
+      {
+        question: "What is the main purpose of flaps on approach?",
+        answers: ["Increase lift and drag", "Reduce weight", "Increase cabin pressurization", "Brake the wheels in flight"],
+        correctIndex: 0,
+        explanation: "Flaps help generate lift and drag at low speeds."
+      },
+      {
+        question: "Which of these aircraft uses turboprop engines?",
+        answers: ["Boeing 777", "Airbus A350", "ATR 72", "Boeing 787"],
+        correctIndex: 2,
+        explanation: "The ATR 72 is a turboprop aircraft commonly used on regional routes."
+      }
+    ];
+
+    const form = document.getElementById("quiz-form");
+    const sampleSelect = document.getElementById("sample-question");
+    const durationSlider = document.getElementById("duration");
+    const durationOutput = document.getElementById("duration-output");
+    const connectionCard = document.getElementById("connection-card");
+    const connectionTitle = document.getElementById("connection-title");
+    const connectionDetail = document.getElementById("connection-detail");
+    const liveSummary = document.getElementById("live-summary");
+    const feedback = document.getElementById("feedback");
+    const startButton = document.getElementById("start-question");
+    const revealButton = document.getElementById("reveal-answer");
+    const clearButton = document.getElementById("clear-overlay");
+
+    let databaseRef = null;
+    let currentQuiz = null;
+    let serverTimeOffset = 0;
+    let serverClockReady = false;
+    let connected = false;
+    let timeoutUpdatePending = false;
+
+    sampleQuestions.forEach(function (item, index) {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = item.question;
+      sampleSelect.appendChild(option);
+    });
+
+    function loadSample(index) {
+      const sample = sampleQuestions[index];
+      if (!sample) return;
+      document.getElementById("question").value = sample.question;
+      sample.answers.forEach(function (answer, answerIndex) {
+        document.getElementById("answer-" + answerIndex).value = answer;
+      });
+      document.getElementById("correct-answer").value = String(sample.correctIndex);
+      document.getElementById("explanation").value = sample.explanation;
+      document.getElementById("question-number").value = String(index + 1);
+      document.getElementById("total-questions").value = String(sampleQuestions.length);
+    }
+
+    sampleSelect.addEventListener("change", function () {
+      if (sampleSelect.value !== "") loadSample(Number(sampleSelect.value));
+    });
+    sampleSelect.value = "0";
+    loadSample(0);
+
+    durationSlider.addEventListener("input", function () {
+      durationOutput.textContent = durationSlider.value + " seconds";
+    });
+
+    function setFeedback(message, kind) {
+      feedback.textContent = message;
+      feedback.className = "feedback" + (kind ? " " + kind : "");
+    }
+
+    function updateButtons() {
+      startButton.disabled = !connected || !serverClockReady;
+      clearButton.disabled = !connected;
+      revealButton.disabled = !connected || !currentQuiz || currentQuiz.status !== "active";
+    }
+
+    function setConnectionState(isConnected, detail) {
+      connected = isConnected;
+      connectionCard.classList.toggle("connected", connected);
+      connectionTitle.textContent = connected ? "Connected to Firebase" : "Firebase disconnected";
+      connectionDetail.textContent = detail || (connected
+        ? (serverClockReady
+          ? "The overlay receives live updates from this control panel."
+          : "Connected. Syncing the timer clock...")
+        : "Reconnecting... Check your internet connection and Firebase permissions.");
+      updateButtons();
+    }
+
+    function renderLiveState(state) {
+      currentQuiz = state;
+      timeoutUpdatePending = false;
+      if (!state || state.status === "idle") {
+        liveSummary.textContent = "The overlay is waiting for the host to publish a question.";
+      } else if (state.status === "active") {
+        liveSummary.textContent = "Question " + (state.questionNumber || "") +
+          " is live. The timer is running on the overlay.";
+      } else if (state.status === "revealed") {
+        liveSummary.textContent = "The correct answer has been revealed on the overlay.";
+      } else if (state.status === "complete") {
+        liveSummary.textContent = "The quiz is complete.";
+      } else {
+        liveSummary.textContent = "The overlay received an unrecognized quiz state.";
+      }
+      updateButtons();
+    }
+
+    function serverNow() {
+      return Date.now() + serverTimeOffset;
+    }
+
+    function revealCurrentAnswer(timedOut) {
+      if (!databaseRef || !currentQuiz || currentQuiz.status !== "active") return;
+      if (timedOut) timeoutUpdatePending = true;
+      databaseRef.update({
+        status: "revealed",
+        revealedAt: serverNow()
+      }).then(function () {
+        setFeedback(timedOut ? "Time is up. The answer was revealed." : "The correct answer was revealed.", "success");
+      }).catch(function (error) {
+        if (!timedOut) timeoutUpdatePending = false;
+        console.error("Could not reveal the quiz answer:", error);
+        setFeedback("Could not update Firebase: " + error.message, "error");
+      });
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!connected || !databaseRef) {
+        setFeedback("Not connected to Firebase. Reconnect before publishing.", "error");
+        return;
+      }
+
+      const question = document.getElementById("question").value.trim();
+      const answers = [0, 1, 2, 3].map(function (index) {
+        return document.getElementById("answer-" + index).value.trim();
+      });
+      const questionNumber = Number(document.getElementById("question-number").value);
+      const totalQuestions = Number(document.getElementById("total-questions").value);
+      const durationSeconds = Number(durationSlider.value);
+      const correctIndex = Number(document.getElementById("correct-answer").value);
+
+      if (!question || answers.some(function (answer) { return !answer; })) {
+        setFeedback("Enter a question and all four answer options.", "error");
+        return;
+      }
+      if (!Number.isInteger(questionNumber) || questionNumber < 1 ||
+          !Number.isInteger(totalQuestions) || totalQuestions < questionNumber) {
+        setFeedback("Question numbers must be positive, and total questions cannot be less than the current question.", "error");
+        return;
+      }
+
+      const startedAt = serverNow();
+      const state = {
+        status: "active",
+        question: question,
+        answers: answers,
+        correctIndex: correctIndex,
+        explanation: document.getElementById("explanation").value.trim(),
+        questionNumber: questionNumber,
+        totalQuestions: totalQuestions,
+        durationSeconds: durationSeconds,
+        startedAt: startedAt,
+        endsAt: startedAt + durationSeconds * 1000,
+        updatedAt: startedAt
+      };
+
+      startButton.disabled = true;
+      databaseRef.set(state).then(function () {
+        setFeedback("Question published. The overlay timer has started.", "success");
+      }).catch(function (error) {
+        console.error("Could not publish the quiz question:", error);
+        setFeedback("Could not publish to Firebase: " + error.message, "error");
+      }).finally(updateButtons);
+    });
+
+    revealButton.addEventListener("click", function () {
+      if (!currentQuiz || currentQuiz.status !== "active") return;
+      revealCurrentAnswer(false);
+    });
+
+    clearButton.addEventListener("click", function () {
+      if (!connected || !databaseRef) {
+        setFeedback("Not connected to Firebase. Reconnect before clearing the overlay.", "error");
+        return;
+      }
+      clearButton.disabled = true;
+      databaseRef.set({ status: "idle", updatedAt: serverNow() }).then(function () {
+        setFeedback("The overlay has been cleared.", "success");
+      }).catch(function (error) {
+        console.error("Could not clear the quiz overlay:", error);
+        setFeedback("Could not clear Firebase quiz state: " + error.message, "error");
+      }).finally(updateButtons);
+    });
+
+    window.setInterval(function () {
+      if (!currentQuiz || currentQuiz.status !== "active" || timeoutUpdatePending) return;
+      if (Number(currentQuiz.endsAt) <= serverNow()) revealCurrentAnswer(true);
+    }, 250);
+
+    function showFirebaseError(message, error) {
+      const detail = error && error.message
+        ? error.message
+        : "Check the Firebase database configuration and permissions.";
+      setConnectionState(false, detail);
+      connectionTitle.textContent = message;
+      liveSummary.textContent = "Live control is unavailable until Firebase connects.";
+      setFeedback(message + (error && error.message ? " " + error.message : ""), "error");
+      if (error) console.error(message, error);
+    }
+
+    if (typeof firebase === "undefined") {
+      showFirebaseError("Firebase SDK failed to load.");
+    } else {
+      try {
+        firebase.initializeApp({
+          databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
+        });
+        const database = firebase.database();
+        database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
+          const value = snapshot.val();
+          const offset = Number(value);
+          serverClockReady = typeof value === "number" && Number.isFinite(offset);
+          if (serverClockReady) serverTimeOffset = offset;
+          updateButtons();
+          if (connected) setConnectionState(true);
+        }, function (error) {
+          console.error("Firebase server clock unavailable:", error);
+        });
+        database.ref(".info/connected").on("value", function (snapshot) {
+          setConnectionState(snapshot.val() === true);
+        }, function (error) {
+          showFirebaseError("Could not check the Firebase connection.", error);
+        });
+        databaseRef = database.ref("quizOverlayState");
+        databaseRef.on("value", function (snapshot) {
+          renderLiveState(snapshot.val());
+        }, function (error) {
+          showFirebaseError("Could not read the Firebase quiz state.", error);
+        });
+      } catch (error) {
+        showFirebaseError("Could not initialize Firebase.", error);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07131c">
   <title>Sky Stations - Quiz Overlay</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -284,21 +286,6 @@
       transition: border-color 160ms ease, background 160ms ease, opacity 160ms ease;
     }
 
-    button.answer {
-      cursor: pointer;
-    }
-
-    button.answer:hover:not(:disabled) {
-      border-color: var(--cyan);
-      background: rgba(31, 74, 81, 0.72);
-    }
-
-    button.answer:focus-visible,
-    .next-button:focus-visible {
-      outline: 2px solid var(--amber);
-      outline-offset: 3px;
-    }
-
     .answer-key {
       display: grid;
       width: 27px;
@@ -310,10 +297,6 @@
       color: var(--cyan);
       font-size: 13px;
       font-weight: 700;
-    }
-
-    .answer:disabled {
-      cursor: default;
     }
 
     .answer.correct {
@@ -418,27 +401,20 @@
       background: linear-gradient(90deg, var(--cyan), var(--amber));
     }
 
-    .next-button {
+    .quiz-status {
+      display: grid;
       min-height: 37px;
+      place-items: center;
       padding: 8px 10px;
       border: 1px solid rgba(102, 228, 230, 0.42);
       border-radius: 4px;
       background: rgba(31, 74, 81, 0.42);
       color: var(--cyan);
-      font: inherit;
+      font-family: inherit;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.08em;
-      cursor: pointer;
-    }
-
-    .next-button:hover:not(:disabled) {
-      background: rgba(31, 74, 81, 0.78);
-    }
-
-    .next-button:disabled {
-      cursor: default;
-      opacity: 0.5;
+      text-align: center;
     }
 
     .barcode {
@@ -558,7 +534,7 @@
         max-width: 240px;
       }
 
-      .next-button {
+      .quiz-status {
         grid-column: 1 / -1;
         min-height: 44px;
         font-size: 13px;
@@ -631,7 +607,7 @@
         font-size: 8px;
       }
 
-      .next-button {
+      .quiz-status {
         min-height: 36px;
         font-size: 11px;
       }
@@ -689,28 +665,28 @@
         </header>
 
         <div class="question-area">
-          <h1 id="question">Preparing the quiz...</h1>
-          <div class="answers" id="answers"></div>
-          <p class="feedback" id="feedback">The quiz will begin shortly.</p>
+          <h1 id="question">Waiting for the host...</h1>
+          <div class="answers" id="answers" role="list" aria-label="Answer options"></div>
+          <p class="feedback" id="feedback">Open Quiz Control and publish a question to begin.</p>
         </div>
 
         <footer class="ticket-footer">
-          <span class="footer-label">Answer with 1, 2, 3 or 4</span>
+          <span class="footer-label">Choose an answer before time runs out</span>
           <span class="footer-label">Flight SS 042</span>
         </footer>
       </section>
 
-      <aside class="boarding-stub" aria-label="Quiz timer and controls">
+      <aside class="boarding-stub" aria-label="Quiz timer and status">
         <span class="stub-label">Live quiz</span>
-        <span class="round-label" id="round-label">GET READY</span>
+        <span class="round-label" id="round-label">WAITING</span>
         <div class="timer-display">
-          <span class="timer-value" id="timer-value">20</span>
+          <span class="timer-value" id="timer-value">--</span>
           <span class="timer-unit">Seconds left</span>
-          <div class="timer-track" role="progressbar" aria-label="Time to answer" aria-valuemin="0" aria-valuemax="20" aria-valuenow="20">
+          <div class="timer-track" id="timer-track" role="progressbar" aria-label="Time to answer" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
             <div class="timer-fill" id="timer-fill"></div>
           </div>
         </div>
-        <button class="next-button" id="next-button" type="button" disabled>PREPARING...</button>
+        <div class="quiz-status" id="quiz-status">WAITING FOR HOST</div>
         <div class="barcode" aria-hidden="true"></div>
         <span class="barcode-number">SS042 - QUIZ - A1B2C3</span>
       </aside>
@@ -718,54 +694,14 @@
   </main>
 
   <script>
-    const questions = [
-      {
-        question: "Which manufacturer builds the 737 and 787 Dreamliner?",
-        answers: ["Airbus", "Boeing", "Embraer", "Bombardier"],
-        correct: 1,
-        detail: "The 737 and 787 Dreamliner are aircraft built by the American manufacturer Boeing."
-      },
-      {
-        question: "Which aircraft is known as the Superjumbo?",
-        answers: ["Airbus A380", "Boeing 757", "Embraer E195", "Airbus A321"],
-        correct: 0,
-        detail: "The Airbus A380 is the largest passenger airliner in service."
-      },
-      {
-        question: "What does transponder code 7700 generally indicate?",
-        answers: ["Training flight", "General emergency", "Communication failure", "State aircraft"],
-        correct: 1,
-        detail: "Code 7700 is used to signal a general emergency."
-      },
-      {
-        question: "Which Brazilian manufacturer builds the E-Jet family?",
-        answers: ["Cessna", "ATR", "Embraer", "Pilatus"],
-        correct: 2,
-        detail: "Embraer builds the E-Jet and E-Jet E2 families."
-      },
-      {
-        question: "What is the main purpose of flaps on approach?",
-        answers: ["Increase lift and drag", "Reduce weight", "Increase cabin pressurization", "Brake the wheels in flight"],
-        correct: 0,
-        detail: "Flaps help generate lift and drag at low speeds."
-      },
-      {
-        question: "Which of these aircraft uses turboprop engines?",
-        answers: ["Boeing 777", "Airbus A350", "ATR 72", "Boeing 787"],
-        correct: 2,
-        detail: "The ATR 72 is a turboprop aircraft commonly used on regional routes."
-      }
-    ];
-
-    const duration = 20;
     const questionElement = document.getElementById("question");
     const answersElement = document.getElementById("answers");
     const feedbackElement = document.getElementById("feedback");
     const roundLabel = document.getElementById("round-label");
     const timerFill = document.getElementById("timer-fill");
     const timerValue = document.getElementById("timer-value");
-    const timerTrack = document.querySelector(".timer-track");
-    const nextButton = document.getElementById("next-button");
+    const timerTrack = document.getElementById("timer-track");
+    const quizStatus = document.getElementById("quiz-status");
     const settingsPanel = document.getElementById("settings-panel");
     const settingsToggle = document.getElementById("settings-toggle");
     const questionSizeSlider = document.getElementById("question-size");
@@ -776,9 +712,9 @@
     const defaultTextSizes = { question: 40, answer: 22 };
     const textSettingsKey = "sky-stations-quiz-text-sizes";
 
-    let questionIndex = -1;
     let timerId = 0;
-    let roundActive = false;
+    let currentQuiz = null;
+    let serverTimeOffset = 0;
 
     function loadTextSizes() {
       let saved;
@@ -862,142 +798,173 @@
       setSettingsOpen(false);
     });
 
-    function updateTimer(secondsLeft) {
-      const progress = Math.max(0, secondsLeft / duration);
+    function updateTimer(secondsLeft, durationSeconds) {
+      const progress = durationSeconds > 0
+        ? Math.max(0, Math.min(1, secondsLeft / durationSeconds))
+        : 0;
       timerFill.style.transform = "scaleX(" + progress + ")";
-      timerValue.textContent = String(Math.ceil(secondsLeft));
-      timerTrack.setAttribute("aria-valuenow", String(Math.ceil(secondsLeft)));
+      timerValue.textContent = String(Math.max(0, Math.ceil(secondsLeft)));
+      timerTrack.setAttribute("aria-valuemax", String(durationSeconds));
+      timerTrack.setAttribute("aria-valuenow", String(Math.max(0, Math.ceil(secondsLeft))));
     }
 
-    function finishQuestion(timedOut) {
-      if (!roundActive) return;
-      roundActive = false;
+    function clearTimer() {
       window.clearInterval(timerId);
-
-      const current = questions[questionIndex];
-      answersElement.querySelectorAll(".answer").forEach(function (button, index) {
-        button.disabled = true;
-        if (index === current.correct) {
-          button.classList.add("correct");
-        } else if (button.dataset.selected === "true") {
-          button.classList.add("incorrect");
-        } else {
-          button.classList.add("dimmed");
-        }
-      });
-
-      if (timedOut) {
-        feedbackElement.textContent = "Time's up. " + current.detail;
-      } else {
-        const selected = answersElement.querySelector('[data-selected="true"]');
-        if (selected && Number(selected.dataset.index) === current.correct) {
-          feedbackElement.textContent = "Correct! " + current.detail;
-        } else {
-          feedbackElement.textContent = "Not quite. " + current.detail;
-        }
-      }
-
-      nextButton.disabled = false;
-      nextButton.textContent = questionIndex === questions.length - 1
-        ? "VIEW RESULTS"
-        : "NEXT QUESTION";
+      timerId = 0;
     }
 
-    function chooseAnswer(index) {
-      if (!roundActive) return;
-      const button = answersElement.querySelector('[data-index="' + index + '"]');
-      if (!button) return;
-      button.dataset.selected = "true";
-      finishQuestion(false);
-    }
-
-    function showResults() {
-      roundActive = false;
-      questionElement.textContent = "Quiz complete!";
+    function showWaiting(message, status) {
+      clearTimer();
+      currentQuiz = null;
+      questionElement.textContent = message;
       answersElement.replaceChildren();
-      feedbackElement.textContent = "That's the end of the quiz. Thanks for playing.";
-      roundLabel.textContent = "ROUTE COMPLETE";
+      feedbackElement.textContent = "";
+      roundLabel.textContent = "WAITING";
       timerValue.textContent = "--";
       timerFill.style.transform = "scaleX(0)";
+      timerTrack.setAttribute("aria-valuemax", "1");
       timerTrack.setAttribute("aria-valuenow", "0");
-      nextButton.disabled = false;
-      nextButton.textContent = "PLAY AGAIN";
+      quizStatus.textContent = status || "WAITING FOR HOST";
     }
 
-    function startQuestion() {
-      if (questionIndex >= questions.length - 1) {
-        showResults();
-        return;
-      }
-
-      questionIndex += 1;
-      roundActive = true;
-      window.clearInterval(timerId);
-
-      const current = questions[questionIndex];
-      questionElement.textContent = current.question;
-      roundLabel.textContent = "QUESTION " + String(questionIndex + 1).padStart(2, "0") +
-        " / " + String(questions.length).padStart(2, "0");
-      feedbackElement.textContent = "Choose an answer. You have " + duration + " seconds.";
+    function renderAnswers(quiz, revealAnswer) {
       answersElement.replaceChildren();
-
-      current.answers.forEach(function (answer, index) {
-        const button = document.createElement("button");
+      quiz.answers.forEach(function (answer, index) {
+        const row = document.createElement("div");
         const key = document.createElement("span");
         const label = document.createElement("span");
-        button.className = "answer";
-        button.type = "button";
-        button.dataset.index = String(index);
+        row.className = "answer";
+        row.setAttribute("role", "listitem");
+        if (revealAnswer) {
+          row.classList.add(index === quiz.correctIndex ? "correct" : "dimmed");
+        }
         key.className = "answer-key";
         key.textContent = String(index + 1);
         label.textContent = answer;
-        button.append(key, label);
-        button.addEventListener("click", function () {
-          chooseAnswer(index);
-        });
-        answersElement.appendChild(button);
+        row.append(key, label);
+        answersElement.appendChild(row);
       });
-
-      nextButton.disabled = true;
-      nextButton.textContent = "CHOOSE AN ANSWER";
-      updateTimer(duration);
-
-      const startedAt = performance.now();
-      timerId = window.setInterval(function () {
-        const elapsed = (performance.now() - startedAt) / 1000;
-        const remaining = Math.max(0, duration - elapsed);
-        updateTimer(remaining);
-        if (remaining <= 0) finishQuestion(true);
-      }, 100);
     }
 
-    nextButton.addEventListener("click", function () {
-      if (nextButton.textContent === "PLAY AGAIN") {
-        questionIndex = -1;
+    function revealCurrentAnswer(timedOut) {
+      if (!currentQuiz) return;
+      clearTimer();
+      renderAnswers(currentQuiz, true);
+      feedbackElement.textContent = (timedOut ? "Time's up. " : "Answer revealed. ") +
+        currentQuiz.explanation;
+      quizStatus.textContent = timedOut ? "TIME UP" : "ANSWER REVEALED";
+    }
+
+    function renderQuizState(state) {
+      if (!state || state.status === "idle") {
+        showWaiting("Waiting for the host to publish a question.", "WAITING FOR HOST");
+        return;
       }
-      if (!roundActive) startQuestion();
-    });
+
+      if (state.status === "complete") {
+        showWaiting("Quiz complete. Thanks for playing!", "QUIZ COMPLETE");
+        return;
+      }
+
+      const durationSeconds = Number(state.durationSeconds);
+      const endsAt = Number(state.endsAt);
+      if ((state.status !== "active" && state.status !== "revealed") ||
+          typeof state.question !== "string" ||
+          !Array.isArray(state.answers) ||
+          state.answers.length !== 4 ||
+          !state.answers.every(function (answer) { return typeof answer === "string"; }) ||
+          !Number.isInteger(Number(state.correctIndex)) ||
+          Number(state.correctIndex) < 0 ||
+          Number(state.correctIndex) >= state.answers.length ||
+          !Number.isFinite(durationSeconds) || durationSeconds < 5 || durationSeconds > 120 ||
+          !Number.isFinite(endsAt)) {
+        showWaiting("The host sent invalid quiz data. Please republish the question.", "INVALID QUIZ DATA");
+        return;
+      }
+
+      clearTimer();
+      currentQuiz = {
+        question: state.question,
+        answers: state.answers,
+        correctIndex: Number(state.correctIndex),
+        explanation: typeof state.explanation === "string" ? state.explanation : "",
+        durationSeconds: durationSeconds,
+        endsAt: endsAt
+      };
+      questionElement.textContent = currentQuiz.question;
+
+      const questionNumber = Number(state.questionNumber);
+      const totalQuestions = Number(state.totalQuestions);
+      roundLabel.textContent = Number.isInteger(questionNumber) && questionNumber > 0
+        ? "QUESTION " + String(questionNumber).padStart(2, "0") +
+          (Number.isInteger(totalQuestions) && totalQuestions >= questionNumber
+            ? " / " + String(totalQuestions).padStart(2, "0")
+            : "")
+        : "LIVE QUESTION";
+
+      const remaining = Math.max(0, (endsAt - (Date.now() + serverTimeOffset)) / 1000);
+      updateTimer(remaining, durationSeconds);
+      renderAnswers(currentQuiz, state.status === "revealed");
+
+      if (state.status === "revealed") {
+        feedbackElement.textContent = "Answer revealed. " + currentQuiz.explanation;
+        quizStatus.textContent = "ANSWER REVEALED";
+        return;
+      }
+
+      feedbackElement.textContent = "Choose an answer before the timer ends.";
+      quizStatus.textContent = "QUESTION LIVE";
+
+      function tick() {
+        const secondsLeft = Math.max(0, (endsAt - (Date.now() + serverTimeOffset)) / 1000);
+        updateTimer(secondsLeft, durationSeconds);
+        if (secondsLeft <= 0) revealCurrentAnswer(true);
+      }
+
+      tick();
+      if (currentQuiz) timerId = window.setInterval(tick, 100);
+    }
+
+    function showFirebaseError(message, error) {
+      if (error) console.error(message, error);
+      showWaiting(message, "FIREBASE ERROR");
+    }
+
+    if (typeof firebase === "undefined") {
+      showFirebaseError("Firebase could not load. Check the network connection.");
+    } else {
+      try {
+        firebase.initializeApp({
+          databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
+        });
+        const database = firebase.database();
+        database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
+          const value = snapshot.val();
+          const offset = Number(value);
+          if (typeof value === "number" && Number.isFinite(offset)) {
+            serverTimeOffset = offset;
+          }
+        }, function (error) {
+          console.error("Firebase server clock unavailable:", error);
+        });
+        database.ref("quizOverlayState").on("value", function (snapshot) {
+          renderQuizState(snapshot.val());
+        }, function (error) {
+          showFirebaseError("Couldn't read the live quiz. Check Firebase database permissions.", error);
+        });
+      } catch (error) {
+        showFirebaseError("Couldn't connect to Firebase. Check the database configuration.", error);
+      }
+    }
 
     window.addEventListener("keydown", function (event) {
       if (event.key === "F2") {
         event.preventDefault();
         setSettingsOpen(settingsPanel.hidden);
-        return;
-      }
-
-      if (!settingsPanel.hidden) {
-        if (event.key === "Escape") setSettingsOpen(false);
-        return;
-      }
-
-      if (/^[1-4]$/.test(event.key)) {
-        chooseAnswer(Number(event.key) - 1);
-      } else if (event.key === "Enter" && !roundActive && !nextButton.disabled) {
-        nextButton.click();
+      } else if (!settingsPanel.hidden && event.key === "Escape") {
+        setSettingsOpen(false);
       }
     });
-
-    window.setTimeout(startQuestion, 900);
   </script>
 </body>
 </html>
