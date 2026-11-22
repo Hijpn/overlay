@@ -360,7 +360,28 @@
       </section>
 
       <section class="card">
-        <h2 class="section-heading"><span class="step">03</span>Timer</h2>
+        <h2 class="section-heading"><span class="step">03</span>Text size</h2>
+        <div class="field-grid">
+          <label for="question-font-size">
+            <span class="range-heading">
+              <span>Question</span>
+              <output class="range-output" id="question-font-size-output" for="question-font-size">40 px</output>
+            </span>
+            <input id="question-font-size" type="range" min="28" max="50" step="1" value="40" disabled>
+          </label>
+          <label for="answer-font-size">
+            <span class="range-heading">
+              <span>Answer options</span>
+              <output class="range-output" id="answer-font-size-output" for="answer-font-size">22 px</output>
+            </span>
+            <input id="answer-font-size" type="range" min="18" max="50" step="1" value="22" disabled>
+          </label>
+        </div>
+        <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Adjust either size up to 50 px. Changes sync to the overlay.</p>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading"><span class="step">04</span>Timer</h2>
         <label for="duration">
           <span class="range-heading">
             <span>Answer time</span>
@@ -427,6 +448,11 @@
     const sampleSelect = document.getElementById("sample-question");
     const durationSlider = document.getElementById("duration");
     const durationOutput = document.getElementById("duration-output");
+    const questionFontSizeSlider = document.getElementById("question-font-size");
+    const questionFontSizeOutput = document.getElementById("question-font-size-output");
+    const answerFontSizeSlider = document.getElementById("answer-font-size");
+    const answerFontSizeOutput = document.getElementById("answer-font-size-output");
+    const fontSettingsFeedback = document.getElementById("font-settings-feedback");
     const connectionCard = document.getElementById("connection-card");
     const connectionTitle = document.getElementById("connection-title");
     const connectionDetail = document.getElementById("connection-detail");
@@ -437,6 +463,7 @@
     const clearButton = document.getElementById("clear-overlay");
 
     let databaseRef = null;
+    let fontSizeSettingsRef = null;
     let currentQuiz = null;
     let serverTimeOffset = 0;
     let serverClockReady = false;
@@ -473,6 +500,67 @@
       durationOutput.textContent = durationSlider.value + " seconds";
     });
 
+    function updateFontSizeOutputs() {
+      questionFontSizeOutput.textContent = questionFontSizeSlider.value + " px";
+      answerFontSizeOutput.textContent = answerFontSizeSlider.value + " px";
+    }
+
+    function setFontSettingsFeedback(message, kind) {
+      fontSettingsFeedback.textContent = message;
+      fontSettingsFeedback.className = "feedback" + (kind ? " " + kind : "");
+    }
+
+    function renderFontSizeSettings(snapshot) {
+      if (!snapshot.exists()) return;
+      const sizes = snapshot.val();
+
+      if (Object.prototype.hasOwnProperty.call(sizes, "question")) {
+        if (!Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 50) {
+          setFontSettingsFeedback("Firebase returned an invalid question size.", "error");
+          console.error("Invalid Firebase question font size:", sizes.question);
+          return;
+        }
+        questionFontSizeSlider.value = String(sizes.question);
+      }
+
+      if (Object.prototype.hasOwnProperty.call(sizes, "answer")) {
+        if (!Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 50) {
+          setFontSettingsFeedback("Firebase returned an invalid answer size.", "error");
+          console.error("Invalid Firebase answer font size:", sizes.answer);
+          return;
+        }
+        answerFontSizeSlider.value = String(sizes.answer);
+      }
+
+      updateFontSizeOutputs();
+      setFontSettingsFeedback("Text sizes are synced with the overlay.");
+    }
+
+    function saveFontSizeSetting(key, slider) {
+      if (!connected || !fontSizeSettingsRef) {
+        setFontSettingsFeedback("Not connected to Firebase. Reconnect before changing text sizes.", "error");
+        return;
+      }
+
+      const value = Number(slider.value);
+      setFontSettingsFeedback("Updating the overlay text size...");
+      fontSizeSettingsRef.update({ [key]: value }).then(function () {
+        setFontSettingsFeedback("Overlay text size updated.", "success");
+      }).catch(function (error) {
+        console.error("Could not update the overlay text size:", error);
+        setFontSettingsFeedback("Could not update Firebase: " + error.message, "error");
+      });
+    }
+
+    questionFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
+    answerFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
+    questionFontSizeSlider.addEventListener("change", function () {
+      saveFontSizeSetting("question", questionFontSizeSlider);
+    });
+    answerFontSizeSlider.addEventListener("change", function () {
+      saveFontSizeSetting("answer", answerFontSizeSlider);
+    });
+
     function setFeedback(message, kind) {
       feedback.textContent = message;
       feedback.className = "feedback" + (kind ? " " + kind : "");
@@ -482,6 +570,8 @@
       startButton.disabled = !connected || !serverClockReady;
       clearButton.disabled = !connected;
       revealButton.disabled = !connected || !currentQuiz || currentQuiz.status !== "active";
+      questionFontSizeSlider.disabled = !connected;
+      answerFontSizeSlider.disabled = !connected;
     }
 
     function setConnectionState(isConnected, detail) {
@@ -646,6 +736,11 @@
           renderLiveState(snapshot.val());
         }, function (error) {
           showFirebaseError("Could not read the Firebase quiz state.", error);
+        });
+        fontSizeSettingsRef = database.ref("quizOverlaySettings/fontSizes");
+        fontSizeSettingsRef.on("value", renderFontSizeSettings, function (error) {
+          setFontSettingsFeedback("Could not read text sizes from Firebase: " + error.message, "error");
+          console.error("Firebase text-size listener failed:", error);
         });
       } catch (error) {
         showFirebaseError("Could not initialize Firebase.", error);

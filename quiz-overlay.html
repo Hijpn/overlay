@@ -637,7 +637,7 @@
           <span>Question</span>
           <output class="setting-value" id="question-size-value" for="question-size">40 px</output>
         </label>
-          <input id="question-size" type="range" min="28" max="48" step="1" value="40">
+          <input id="question-size" type="range" min="28" max="50" step="1" value="40">
       </div>
 
       <div class="text-setting">
@@ -645,7 +645,7 @@
           <span>Answer options</span>
           <output class="setting-value" id="answer-size-value" for="answer-size">22 px</output>
         </label>
-        <input id="answer-size" type="range" min="18" max="26" step="1" value="22">
+        <input id="answer-size" type="range" min="18" max="50" step="1" value="22">
       </div>
 
       <div class="settings-actions">
@@ -738,8 +738,8 @@
         throw error;
       }
 
-      if (!sizes || !Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 48 ||
-          !Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 26) {
+      if (!sizes || !Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 50 ||
+          !Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 50) {
         settingsStatus.textContent = "Saved text sizes are invalid. Defaults are active.";
         return defaultTextSizes;
       }
@@ -765,6 +765,37 @@
         settingsStatus.textContent = "Settings saved automatically.";
       } catch (error) {
         settingsStatus.textContent = "Changes apply now but could not be saved.";
+      }
+    }
+
+    function applyRemoteTextSizes(snapshot) {
+      if (!snapshot.exists()) return;
+      const sizes = snapshot.val();
+      let updated = false;
+
+      if (Object.prototype.hasOwnProperty.call(sizes, "question")) {
+        if (Number.isInteger(sizes.question) && sizes.question >= 28 && sizes.question <= 50) {
+          questionSizeSlider.value = String(sizes.question);
+          updated = true;
+        } else {
+          settingsStatus.textContent = "The control panel sent an invalid question size.";
+          return;
+        }
+      }
+
+      if (Object.prototype.hasOwnProperty.call(sizes, "answer")) {
+        if (Number.isInteger(sizes.answer) && sizes.answer >= 18 && sizes.answer <= 50) {
+          answerSizeSlider.value = String(sizes.answer);
+          updated = true;
+        } else {
+          settingsStatus.textContent = "The control panel sent an invalid answer size.";
+          return;
+        }
+      }
+
+      if (updated) {
+        applyTextSizes(false);
+        settingsStatus.textContent = "Text sizes synced from Quiz Control.";
       }
     }
 
@@ -951,6 +982,10 @@
           renderQuizState(snapshot.val());
         }, function (error) {
           showFirebaseError("Couldn't read the live quiz. Check Firebase database permissions.", error);
+        });
+        database.ref("quizOverlaySettings/fontSizes").on("value", applyRemoteTextSizes, function (error) {
+          settingsStatus.textContent = "Couldn't sync text sizes from Quiz Control.";
+          console.error("Firebase text-size listener failed:", error);
         });
       } catch (error) {
         showFirebaseError("Couldn't connect to Firebase. Check the database configuration.", error);
