@@ -264,7 +264,8 @@
 
     .answers {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      min-width: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -284,6 +285,11 @@
       line-height: 1.25;
       text-align: left;
       transition: border-color 160ms ease, background 160ms ease, opacity 160ms ease;
+    }
+
+    .answer > span:last-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .answer-key {
