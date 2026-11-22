@@ -269,6 +269,10 @@
       gap: 8px;
     }
 
+    .answers.single-column {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .answer {
       display: flex;
       min-width: 0;
@@ -758,6 +762,7 @@
       const answerSize = Number(answerSizeSlider.value);
       document.documentElement.style.setProperty("--question-size", questionSize + "px");
       document.documentElement.style.setProperty("--answer-size", answerSize + "px");
+      answersElement.classList.toggle("single-column", answerSize >= 56);
       questionSizeValue.textContent = questionSize + " px";
       answerSizeValue.textContent = answerSize + " px";
 
