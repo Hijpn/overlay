@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06120c">
+  <title>Aviation Trivia — Jet Stream Globe</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Consolas", "Courier New", monospace;
+      --phosphor: #b6ff78;
+      --bright: #e4ffc9;
+      --muted: #8bad7b;
+      --amber: #ffcf70;
+      --line: rgba(182, 255, 120, 0.3);
+      --panel: rgba(3, 18, 12, 0.95);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      color: var(--bright);
+    }
+
+    .overlay {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      isolation: isolate;
+    }
+
+    .overlay::after {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(182, 255, 120, 0.025) 0,
+        rgba(182, 255, 120, 0.025) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      content: "";
+      pointer-events: none;
+    }
+
+    .weather-globe {
+      position: absolute;
+      z-index: 2;
+      top: 7%;
+      left: 7%;
+      width: min(54vw, 610px);
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid rgba(192, 230, 255, 0.62);
+      border-radius: 50%;
+      background: radial-gradient(circle at 34% 28%, #9bd8f3 0, #478bb4 36%, #153b61 72%, #071727 100%);
+      box-shadow:
+        inset -30px -20px 70px rgba(0, 0, 18, 0.72),
+        inset 16px 10px 48px rgba(230, 248, 255, 0.2),
+        0 0 36px rgba(65, 171, 224, 0.2);
+      pointer-events: none;
+    }
+
+    .weather-globe::after {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(224, 246, 255, 0.28);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 32% 26%, rgba(245, 253, 255, 0.18), transparent 49%);
+      content: "";
+      pointer-events: none;
+    }
+
+    .globe-svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .globe-land {
+      fill: url(#land-gradient);
+      opacity: 0.63;
+    }
+
+    .globe-grid {
+      fill: none;
+      stroke: rgba(224, 246, 255, 0.28);
+      stroke-width: 0.8;
+    }
+
+    .jet-halo,
+    .jet-band,
+    .jet-highlight,
+    .jet-flow {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .jet-halo {
+      stroke: url(#jet-gradient);
+      stroke-width: 48;
+      opacity: 0.42;
+      filter: url(#jet-blur);
+    }
+
+    .jet-band {
+      stroke: url(#jet-gradient);
+      stroke-width: 23;
+      opacity: 0.88;
+    }
+
+    .jet-highlight {
+      stroke: rgba(255, 244, 208, 0.76);
+      stroke-width: 1.5;
+      opacity: 0.72;
+    }
+
+    .jet-flow {
+      stroke: rgba(255, 255, 236, 0.96);
+      stroke-dasharray: 1 13;
+      stroke-width: 2.2;
+      opacity: 0.9;
+      animation: jet-flow 13s linear infinite;
+    }
+
+    .jet-flow.flow-two {
+      animation-duration: 18s;
+      animation-delay: -8s;
+      opacity: 0.58;
+    }
+
+    .globe-caption {
+      position: absolute;
+      z-index: 1;
+      bottom: 8%;
+      left: 50%;
+      color: rgba(232, 247, 255, 0.82);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
+      transform: translateX(-50%);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .flight-path {
+      position: absolute;
+      z-index: 4;
+      top: 29%;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .contrail {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      width: 100%;
+      height: 1px;
+      transform: scaleX(0);
+      transform-origin: right center;
+      background: linear-gradient(90deg, transparent, rgba(182, 255, 120, 0.8));
+      box-shadow: 0 0 10px rgba(182, 255, 120, 0.8);
+    }
+
+    .aircraft {
+      position: absolute;
+      top: 50%;
+      left: 110%;
+      width: 78px;
+      height: 39px;
+      color: var(--bright);
+      filter: drop-shadow(0 0 9px rgba(182, 255, 120, 0.85));
+      transform: translateY(-50%);
+    }
+
+    .aircraft svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .quiz-card {
+      position: absolute;
+      z-index: 3;
+      right: 5%;
+      bottom: 6%;
+      width: min(650px, 61vw);
+      padding: 21px 23px 17px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-top: 2px solid var(--phosphor);
+      background:
+        linear-gradient(135deg, rgba(21, 54, 27, 0.36), transparent 58%),
+        var(--panel);
+      box-shadow: 0 0 28px rgba(81, 255, 64, 0.11), inset 0 0 36px rgba(81, 255, 64, 0.045);
+      backdrop-filter: blur(8px);
+      clip-path: inset(0 0 0 100%);
+    }
+
+    .quiz-card::before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 5px,
+        rgba(182, 255, 120, 0.018) 6px
+      );
+      content: "";
+      pointer-events: none;
+    }
+
+    .topline,
+    .footer,
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .eyebrow,
+    .round-label,
+    .footer-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--phosphor);
+    }
+
+    .signal {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--phosphor);
+      box-shadow: 0 0 9px rgba(182, 255, 120, 0.8);
+      animation: signal-pulse 1.7s ease-in-out infinite;
+    }
+
+    .round-label,
+    .footer-label {
+      color: var(--muted);
+    }
+
+    h1 {
+      max-width: 100%;
+      margin: 16px 0;
+      color: var(--bright);
+      font-size: clamp(19px, 2.1vw, 27px);
+      font-weight: 700;
+      line-height: 1.28;
+      text-shadow: 0 0 14px rgba(182, 255, 120, 0.14);
+      text-wrap: balance;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .answer {
+      display: flex;
+      min-height: 43px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 11px;
+      border: 1px solid rgba(182, 255, 120, 0.2);
+      border-radius: 2px;
+      background: rgba(10, 30, 17, 0.8);
+      color: var(--bright);
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.25;
+      text-align: left;
+      transition: border-color 160ms ease, background 160ms ease, opacity 160ms ease;
+    }
+
+    button.answer {
+      cursor: pointer;
+    }
+
+    button.answer:hover:not(:disabled) {
+      border-color: var(--phosphor);
+      background: rgba(40, 78, 35, 0.8);
+    }
+
+    button.answer:focus-visible,
+    .next-button:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px;
+    }
+
+    .answer-key {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      flex: 0 0 25px;
+      place-items: center;
+      border: 1px solid rgba(182, 255, 120, 0.45);
+      color: var(--phosphor);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .answer:disabled {
+      cursor: default;
+    }
+
+    .answer.correct {
+      border-color: rgba(117, 230, 174, 0.8);
+      background: rgba(24, 91, 67, 0.42);
+    }
+
+    .answer.correct .answer-key {
+      border-color: #75e6ae;
+      color: #75e6ae;
+    }
+
+    .answer.incorrect {
+      border-color: rgba(255, 130, 120, 0.8);
+      background: rgba(112, 42, 43, 0.4);
+    }
+
+    .answer.incorrect .answer-key {
+      border-color: #ff8278;
+      color: #ff8278;
+    }
+
+    .answer.dimmed {
+      opacity: 0.52;
+    }
+
+    .feedback {
+      min-height: 18px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .timer-row {
+      margin-top: 12px;
+    }
+
+    .timer-track {
+      height: 4px;
+      flex: 1;
+      overflow: hidden;
+      background: rgba(182, 255, 120, 0.13);
+    }
+
+    .timer-fill {
+      width: 100%;
+      height: 100%;
+      transform: scaleX(1);
+      transform-origin: left center;
+      background: var(--phosphor);
+      box-shadow: 0 0 8px rgba(182, 255, 120, 0.7);
+    }
+
+    .timer-value {
+      width: 30px;
+      color: var(--amber);
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .footer {
+      min-height: 30px;
+      margin-top: 11px;
+    }
+
+    .next-button {
+      padding: 7px 10px;
+      border: 1px solid rgba(182, 255, 120, 0.48);
+      border-radius: 2px;
+      background: rgba(29, 61, 25, 0.5);
+      color: var(--phosphor);
+      font: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+
+    .next-button:hover {
+      background: rgba(48, 88, 39, 0.76);
+    }
+
+    .overlay.is-entering .flight-path {
+      opacity: 1;
+    }
+
+    .overlay.is-entering .aircraft {
+      animation: fly-across 1.8s cubic-bezier(0.35, 0.02, 0.6, 1) forwards;
+    }
+
+    .overlay.is-entering .contrail {
+      animation: draw-trail 1.8s ease-out forwards;
+    }
+
+    .overlay.is-entering .quiz-card {
+      animation: reveal-card 1.55s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s forwards;
+    }
+
+    @keyframes jet-flow {
+      to { stroke-dashoffset: -260; }
+    }
+
+    @keyframes signal-pulse {
+      50% { opacity: 0.45; }
+    }
+
+    @keyframes fly-across {
+      0% { left: 110%; }
+      100% { left: -12%; }
+    }
+
+    @keyframes draw-trail {
+      0% { transform: scaleX(0); }
+      100% { transform: scaleX(1); }
+    }
+
+    @keyframes reveal-card {
+      0% { clip-path: inset(0 0 0 100%); }
+      100% { clip-path: inset(0 0 0 0); }
+    }
+
+    @media (max-width: 700px) {
+      .weather-globe {
+        top: 5%;
+        left: 1%;
+        width: min(70vw, 420px);
+      }
+
+      .quiz-card {
+        right: 3%;
+        bottom: 4%;
+        width: min(94vw, 500px);
+        padding: 16px;
+      }
+
+      h1 {
+        margin: 12px 0;
+      }
+
+      .answer {
+        min-height: 39px;
+        padding: 7px;
+        font-size: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .signal,
+      .jet-flow {
+        animation-duration: 0.01ms;
+      }
+
+      .overlay.is-entering .aircraft,
+      .overlay.is-entering .contrail,
+      .overlay.is-entering .quiz-card {
+        animation-duration: 0.01ms;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="overlay" id="overlay" aria-label="Aviation quiz weather globe">
+      <div class="weather-globe" aria-hidden="true">
+        <svg class="globe-svg" viewBox="0 0 600 600">
+      <defs>
+          <radialGradient id="ocean-gradient" cx="34%" cy="28%" r="76%">
+            <stop offset="0%" stop-color="#a9e3f7"/>
+            <stop offset="38%" stop-color="#5799be"/>
+            <stop offset="76%" stop-color="#1b4b70"/>
+            <stop offset="100%" stop-color="#071726"/>
+          </radialGradient>
+          <linearGradient id="land-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#d5e0d0"/>
+            <stop offset="100%" stop-color="#6e8992"/>
+          </linearGradient>
+          <linearGradient id="jet-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#45c9f5"/>
+            <stop offset="18%" stop-color="#59e8cf"/>
+            <stop offset="34%" stop-color="#d4ed62"/>
+            <stop offset="45%" stop-color="#ffae35"/>
+            <stop offset="54%" stop-color="#ef3e28"/>
+            <stop offset="63%" stop-color="#ff7b32"/>
+            <stop offset="77%" stop-color="#e9e868"/>
+            <stop offset="90%" stop-color="#62e2d4"/>
+            <stop offset="100%" stop-color="#4abde9"/>
+          </linearGradient>
+          <filter id="jet-blur" x="-30%" y="-50%" width="160%" height="200%">
+            <feGaussianBlur stdDeviation="9"/>
+          </filter>
+          <clipPath id="globe-clip">
+            <circle cx="300" cy="300" r="286"/>
+          </clipPath>
+      </defs>
+        <circle cx="300" cy="300" r="286" fill="url(#ocean-gradient)"/>
+        <g clip-path="url(#globe-clip)">
+          <path class="globe-land" d="M72 154 94 130 116 118 140 105 165 111 183 125 205 126 222 145 211 163 191 168 183 188 165 202 154 226 137 220 126 201 107 190 96 173 79 169Z"/>
+          <path class="globe-land" d="M193 253 213 244 233 255 245 275 239 294 249 316 241 342 229 369 222 401 207 426 198 408 193 379 180 354 183 326 172 305 181 279Z"/>
+          <path class="globe-land" d="M274 183 293 167 314 171 329 185 346 184 355 198 344 212 326 216 314 230 299 224 286 211 270 207Z"/>
+          <path class="globe-land" d="M300 236 324 226 350 235 366 258 370 286 360 314 353 344 335 374 318 367 310 344 296 326 290 299 277 277 284 254Z"/>
+          <path class="globe-land" d="M342 135 366 117 397 111 426 119 451 124 476 143 488 163 470 178 449 176 435 193 414 195 396 213 379 202 363 185 348 172Z"/>
+          <path class="globe-land" d="M405 224 426 211 450 215 469 230 474 249 459 264 440 258 423 271 408 259Z"/>
+          <path class="globe-land" d="M135 468 171 459 212 465 252 459 291 468 328 461 365 470 401 462 439 470 469 481 448 493 407 490 367 497 327 489 286 498 245 489 204 498 164 488Z"/>
+
+          <g class="globe-grid">
+            <ellipse cx="300" cy="300" rx="278" ry="92"/>
+            <ellipse cx="300" cy="300" rx="278" ry="184"/>
+            <ellipse cx="300" cy="300" rx="105" ry="284"/>
+            <ellipse cx="300" cy="300" rx="198" ry="284"/>
+            <path d="M16 300h568M24 205h552M24 395h552"/>
+          </g>
+
+          <path class="jet-halo" d="M-15 253 C 45 221, 78 175, 130 181 S 199 235, 250 260 S 331 287, 376 249 S 455 166, 511 188 S 572 243, 620 213"/>
+          <path class="jet-band" d="M-15 253 C 45 221, 78 175, 130 181 S 199 235, 250 260 S 331 287, 376 249 S 455 166, 511 188 S 572 243, 620 213"/>
+          <path class="jet-highlight" d="M-15 253 C 45 221, 78 175, 130 181 S 199 235, 250 260 S 331 287, 376 249 S 455 166, 511 188 S 572 243, 620 213"/>
+          <path class="jet-flow" d="M-15 253 C 45 221, 78 175, 130 181 S 199 235, 250 260 S 331 287, 376 249 S 455 166, 511 188 S 572 243, 620 213"/>
+
+          <path class="jet-band" d="M-10 349 C 64 319, 104 339, 157 365 S 258 406, 320 374 S 405 300, 461 306 S 550 352, 615 321" style="stroke-width: 9; opacity: .48"/>
+          <path class="jet-flow flow-two" d="M-10 349 C 64 319, 104 339, 157 365 S 258 406, 320 374 S 405 300, 461 306 S 550 352, 615 321"/>
+        </g>
+        <circle cx="300" cy="300" r="285" fill="none" stroke="rgba(226,246,255,.62)" stroke-width="1.5"/>
+        </svg>
+        <span class="globe-caption">JET STREAM // VISUALIZATION</span>
+      </div>
+    </div>
+
+    <div class="flight-path" aria-hidden="true">
+      <div class="contrail"></div>
+      <div class="aircraft">
+        <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 31.5 46 27 66 8c2-2 5-2 7 0l-8 18 34-3 11-9 5 1-7 12 7 8-5 1-11-6-34-3 8 18c-2 2-5 2-7 0L46 36 5 32.5c-1-.1-1-.9 0-1Z" fill="currentColor"/>
+          <path d="m18 31.8 89-1.3" stroke="#06120c" stroke-opacity=".55" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <section class="quiz-card" aria-live="polite">
+      <div class="topline">
+        <div class="eyebrow"><span class="signal"></span> ATC // Aviation Trivia</div>
+        <div class="round-label" id="round-label">Preparing</div>
+      </div>
+      <h1 id="question">Loading question...</h1>
+      <div class="answers" id="answers"></div>
+      <p class="feedback" id="feedback">The question will appear shortly.</p>
+      <div class="timer-row">
+        <div class="timer-track" aria-hidden="true"><div class="timer-fill" id="timer-fill"></div></div>
+        <span class="timer-value" id="timer-value">20</span>
+      </div>
+      <div class="footer">
+        <span class="footer-label" id="score-label">CORRECT 0</span>
+        <button class="next-button" id="next-button" type="button">START QUIZ</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        question: "Which manufacturer makes the 737 and 787 Dreamliner?",
+        answers: ["Airbus", "Boeing", "Embraer", "Bombardier"],
+        correct: 1,
+        detail: "The 737 and 787 are aircraft made by the American manufacturer Boeing."
+      },
+      {
+        question: "Which of these aircraft is known as the Superjumbo?",
+        answers: ["Airbus A380", "Boeing 757", "Embraer E195", "Airbus A321"],
+        correct: 0,
+        detail: "The Airbus A380 is the largest passenger airliner in service."
+      },
+      {
+        question: "What does transponder code 7700 primarily indicate?",
+        answers: ["Training flight", "General emergency", "Communication failure", "State aircraft"],
+        correct: 1,
+        detail: "Code 7700 is used to signal a general emergency."
+      },
+      {
+        question: "Which Brazilian manufacturer builds the E-Jet family?",
+        answers: ["Cessna", "ATR", "Embraer", "Pilatus"],
+        correct: 2,
+        detail: "Embraer builds the E-Jet and E-Jet E2 families."
+      },
+      {
+        question: "What is the main purpose of flaps during approach?",
+        answers: ["Increase lift and drag", "Reduce weight", "Increase cabin pressure", "Brake the wheels in flight"],
+        correct: 0,
+        detail: "Flaps help generate lift and drag at low speeds."
+      },
+      {
+        question: "Which of these is a turboprop aircraft?",
+        answers: ["Boeing 777", "Airbus A350", "ATR 72", "Boeing 787"],
+        correct: 2,
+        detail: "The ATR 72 is a turboprop commonly used on regional routes."
+      }
+    ];
+
+    const duration = 20;
+    const overlay = document.getElementById("overlay");
+    const questionElement = document.getElementById("question");
+    const answersElement = document.getElementById("answers");
+    const feedbackElement = document.getElementById("feedback");
+    const roundLabel = document.getElementById("round-label");
+    const scoreLabel = document.getElementById("score-label");
+    const timerFill = document.getElementById("timer-fill");
+    const timerValue = document.getElementById("timer-value");
+    const nextButton = document.getElementById("next-button");
+
+    let questionIndex = -1;
+    let score = 0;
+    let timerId;
+    let roundActive = false;
+    let answered = false;
+
+    function updateTimer(secondsLeft) {
+      const progress = Math.max(0, secondsLeft / duration);
+      timerFill.style.transform = "scaleX(" + progress + ")";
+      timerValue.textContent = String(Math.ceil(secondsLeft));
+    }
+
+    function finishRound(timedOut) {
+      if (!roundActive) return;
+      roundActive = false;
+      answered = true;
+      window.clearInterval(timerId);
+
+      const current = questions[questionIndex];
+      const buttons = answersElement.querySelectorAll(".answer");
+      buttons.forEach(function (button, index) {
+        button.disabled = true;
+        if (index === current.correct) {
+          button.classList.add("correct");
+        } else if (button.dataset.selected === "true") {
+          button.classList.add("incorrect");
+        } else {
+          button.classList.add("dimmed");
+        }
+      });
+
+      const selected = answersElement.querySelector('[data-selected="true"]');
+      if (timedOut) {
+        feedbackElement.textContent = "Time's up. " + current.detail;
+      } else if (selected && Number(selected.dataset.index) === current.correct) {
+        score += 1;
+        feedbackElement.textContent = "Correct! " + current.detail;
+      } else {
+        feedbackElement.textContent = current.detail;
+      }
+
+      scoreLabel.textContent = "CORRECT " + score;
+      nextButton.textContent = questionIndex === questions.length - 1 ? "VIEW RESULTS" : "NEXT QUESTION";
+    }
+
+    function chooseAnswer(index) {
+      if (!roundActive || answered) return;
+      const button = answersElement.querySelector('[data-index="' + index + '"]');
+      if (!button) return;
+      button.dataset.selected = "true";
+      finishRound(false);
+    }
+
+    function showResults() {
+      roundActive = false;
+      questionElement.textContent = "Quiz complete!";
+      answersElement.replaceChildren();
+      feedbackElement.textContent = "You got " + score + " out of " + questions.length + " questions right.";
+      roundLabel.textContent = "END OF ROUTE";
+      timerValue.textContent = "—";
+      timerFill.style.transform = "scaleX(0)";
+      nextButton.textContent = "RESTART";
+    }
+
+    function startRound() {
+      if (questionIndex >= questions.length - 1) {
+        showResults();
+        return;
+      }
+
+      questionIndex += 1;
+      roundActive = false;
+      answered = false;
+      window.clearInterval(timerId);
+
+      const current = questions[questionIndex];
+      questionElement.textContent = current.question;
+      roundLabel.textContent = "QUESTION " + String(questionIndex + 1).padStart(2, "0") +
+        " / " + String(questions.length).padStart(2, "0");
+      feedbackElement.textContent = "Choose an answer. You have " + duration + " seconds.";
+      answersElement.replaceChildren();
+
+      current.answers.forEach(function (answer, index) {
+        const button = document.createElement("button");
+        button.className = "answer";
+        button.type = "button";
+        button.dataset.index = String(index);
+
+        const key = document.createElement("span");
+        key.className = "answer-key";
+        key.textContent = String(index + 1);
+        const label = document.createElement("span");
+        label.textContent = answer;
+        button.append(key, label);
+        button.addEventListener("click", function () {
+          chooseAnswer(index);
+        });
+        answersElement.appendChild(button);
+      });
+
+      nextButton.textContent = "GET READY...";
+      nextButton.disabled = true;
+      updateTimer(duration);
+      overlay.classList.remove("is-entering");
+      void overlay.offsetWidth;
+      overlay.classList.add("is-entering");
+
+      window.setTimeout(function () {
+        nextButton.disabled = false;
+        nextButton.textContent = "ANSWER: 1–4";
+        roundActive = true;
+        const startedAt = performance.now();
+        timerId = window.setInterval(function () {
+          const elapsed = (performance.now() - startedAt) / 1000;
+          const remaining = Math.max(0, duration - elapsed);
+          updateTimer(remaining);
+          if (remaining <= 0) finishRound(true);
+        }, 100);
+      }, 1800);
+    }
+
+    nextButton.addEventListener("click", function () {
+      if (nextButton.textContent === "RESTART") {
+        questionIndex = -1;
+        score = 0;
+        scoreLabel.textContent = "CORRECT 0";
+      }
+      if (!roundActive) startRound();
+    });
+
+    window.addEventListener("keydown", function (event) {
+      if (/^[1-4]$/.test(event.key)) {
+        chooseAnswer(Number(event.key) - 1);
+      } else if (event.key === "Enter" && !roundActive && !nextButton.disabled) {
+        nextButton.click();
+      }
+    });
+
+    window.setTimeout(startRound, 700);
+  </script>
+</body>
+</html>

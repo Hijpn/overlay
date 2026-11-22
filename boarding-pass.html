@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131c">
+  <title>Sky Stations — Boarding Pass Overlay</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Arial, sans-serif;
+      --ink: #eaf5f6;
+      --muted: #9ab0b9;
+      --cyan: #66e4e6;
+      --amber: #ffcb71;
+      --orange: #ff9a4f;
+      --panel: rgba(5, 15, 23, 0.96);
+      --line: rgba(126, 207, 213, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      color: var(--ink);
+    }
+
+    .overlay {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      isolation: isolate;
+    }
+
+    .boarding-pass {
+      position: absolute;
+      right: 4%;
+      bottom: 3%;
+      left: 4%;
+      display: grid;
+      height: min(330px, 42vh);
+      min-height: 250px;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--cyan);
+      border-right: 3px solid var(--orange);
+      border-radius: 12px;
+      background:
+        linear-gradient(125deg, rgba(10, 29, 39, 0.86), transparent 62%),
+        var(--panel);
+      box-shadow: 0 14px 42px rgba(0, 0, 0, 0.38), inset 0 0 28px rgba(70, 181, 190, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .ticket-main {
+      display: grid;
+      min-width: 0;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      padding: 23px 30px 20px;
+    }
+
+    .pass-header,
+    .brand,
+    .ticket-details,
+    .route {
+      display: flex;
+      align-items: center;
+    }
+
+    .pass-header {
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      gap: 9px;
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .signal {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 10px rgba(255, 203, 113, 0.75);
+    }
+
+    .pass-kind,
+    .field-label,
+    .stub-label,
+    .barcode-number {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .pass-kind {
+      color: var(--amber);
+      text-align: right;
+    }
+
+    .route {
+      justify-content: space-between;
+      gap: 20px;
+      min-width: 0;
+    }
+
+    .airport {
+      min-width: 0;
+    }
+
+    .airport-code {
+      display: block;
+      color: var(--ink);
+      font-size: clamp(36px, 5vw, 58px);
+      font-weight: 750;
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .airport-name {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .route-middle {
+      display: flex;
+      min-width: 90px;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .route-line {
+      position: relative;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--orange));
+      opacity: 0.8;
+    }
+
+    .route-line::before,
+    .route-line::after {
+      position: absolute;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+      background: #10232c;
+      content: "";
+      transform: translateY(-50%);
+    }
+
+    .route-line::before {
+      left: 0;
+    }
+
+    .route-line::after {
+      right: 0;
+    }
+
+    .ticket-details {
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 13px;
+      border-top: 1px solid rgba(126, 207, 213, 0.2);
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field-value {
+      display: block;
+      overflow: hidden;
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .boarding-stub {
+      position: relative;
+      display: grid;
+      min-width: 0;
+      grid-template-rows: auto auto 1fr auto auto;
+      gap: 9px;
+      padding: 21px 20px 17px;
+      border-left: 1px dashed rgba(102, 228, 230, 0.48);
+      background: linear-gradient(145deg, rgba(16, 39, 49, 0.78), rgba(7, 19, 28, 0.4));
+    }
+
+    .stub-route {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .stub-data {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px 14px;
+    }
+
+    .stub-value {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .stub-value.seat {
+      color: var(--amber);
+      font-size: 25px;
+      line-height: 1;
+    }
+
+    .barcode {
+      width: 100%;
+      height: 38px;
+      border: 4px solid rgba(234, 245, 246, 0.92);
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #eaf5f6 0 2px,
+          transparent 2px 4px,
+          #eaf5f6 4px 5px,
+          transparent 5px 8px,
+          #eaf5f6 8px 11px,
+          transparent 11px 13px
+        );
+    }
+
+    .barcode-number {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .boarding-pass {
+        right: 3%;
+        bottom: 3%;
+        left: 3%;
+        height: auto;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) 118px;
+      }
+
+      .ticket-main {
+        gap: 13px;
+        padding: 17px 15px 15px;
+      }
+
+      .pass-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .pass-kind {
+        text-align: left;
+      }
+
+      .route {
+        gap: 8px;
+      }
+
+      .airport-code {
+        font-size: clamp(29px, 9vw, 40px);
+      }
+
+      .airport-name {
+        font-size: 8px;
+        letter-spacing: 0.08em;
+      }
+
+      .route-middle {
+        min-width: 42px;
+        font-size: 7px;
+      }
+
+      .ticket-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .ticket-details .field:first-child {
+        grid-column: 1 / -1;
+      }
+
+      .boarding-stub {
+        gap: 8px;
+        padding: 15px 10px;
+      }
+
+      .stub-data {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .barcode {
+        height: 32px;
+        border-width: 3px;
+      }
+
+      .barcode-number {
+        overflow: hidden;
+        font-size: 7px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="overlay" aria-label="Sky Stations boarding pass overlay">
+    <article class="boarding-pass" aria-label="Boarding pass from Sao Paulo to New York">
+      <section class="ticket-main">
+        <header class="pass-header">
+          <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
+          <span class="pass-kind">Boarding pass &nbsp; / &nbsp; Economy</span>
+        </header>
+
+        <div class="route" aria-label="Sao Paulo to New York">
+          <div class="airport">
+            <span class="airport-code">GRU</span>
+            <span class="airport-name">Sao Paulo</span>
+          </div>
+          <div class="route-middle" aria-hidden="true">
+            <span>Nonstop</span>
+            <span class="route-line"></span>
+          </div>
+          <div class="airport">
+            <span class="airport-code">JFK</span>
+            <span class="airport-name">New York</span>
+          </div>
+        </div>
+
+        <div class="ticket-details">
+          <div class="field">
+            <span class="field-label">Passenger</span>
+            <span class="field-value">Sky Stations Guest</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Flight</span>
+            <span class="field-value">SS 042</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Date</span>
+            <span class="field-value">22 Nov 2026</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Boarding</span>
+            <span class="field-value">08:40</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="boarding-stub" aria-label="Passenger coupon">
+        <span class="stub-label">Passenger coupon</span>
+        <span class="stub-route">GRU &nbsp;–&nbsp; JFK</span>
+        <div class="stub-data">
+          <div>
+            <span class="stub-label">Gate</span>
+            <span class="stub-value">B12</span>
+          </div>
+          <div>
+            <span class="stub-label">Terminal</span>
+            <span class="stub-value">02</span>
+          </div>
+          <div>
+            <span class="stub-label">Group</span>
+            <span class="stub-value">03</span>
+          </div>
+          <div>
+            <span class="stub-label">Seat</span>
+            <span class="stub-value seat">12A</span>
+          </div>
+        </div>
+        <div class="barcode" aria-hidden="true"></div>
+        <span class="barcode-number">SS042 - GRUJFK - 12A</span>
+      </aside>
+    </article>
+  </main>
+</body>
+</html>
