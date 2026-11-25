@@ -1,0 +1,104 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quiz selection sync tests</title>
+<pre id="result">Running...</pre>
+<iframe id="pc" title="PC control fixture"></iframe>
+<iframe id="mobile" title="Mobile control fixture"></iframe>
+<script>
+  async function runTests() {
+    const data = {
+      first: { question: "First", answers: ["a", "b", "c", "d"], correctIndex: 0, explanation: "" },
+      second: { question: "Second", answers: ["e", "f", "g", "h"], correctIndex: 1, explanation: "" }
+    };
+    let selected = "first";
+    let rejectSelection = false;
+    const libraryListeners = [];
+    const selectionListeners = [];
+    const libraryRef = {
+      on: function (event, callback) {
+        libraryListeners.push(callback);
+        callback({ val: function () { return data; } });
+      },
+      child: function (key) {
+        return { key: key, set: function (item) {
+          data[key] = item;
+          libraryListeners.forEach(function (callback) { callback({ val: function () { return data; } }); });
+          return Promise.resolve();
+        } };
+      }
+    };
+    const selectionRef = {
+      on: function (event, callback) {
+        selectionListeners.push(callback);
+        callback({ val: function () { return selected; } });
+      },
+      set: function (key) {
+        if (rejectSelection) return Promise.reject(new Error("Permission denied"));
+        selected = key;
+        selectionListeners.forEach(function (callback) { callback({ val: function () { return selected; } }); });
+        return Promise.resolve();
+      }
+    };
+    function assert(condition, message) {
+      if (!condition) throw new Error(message);
+    }
+    async function setup(id) {
+      const frame = document.getElementById(id);
+      const doc = frame.contentDocument;
+      doc.body.innerHTML = '<select id="saved-question"></select><button id="load-synced-question"></button>' +
+        '<button id="new-question"></button><button id="save-question"></button><button id="delete-question"></button>' +
+        '<input id="csv-file" type="file"><p id="library-feedback"></p><textarea id="question"></textarea>' +
+        '<input id="answer-0"><input id="answer-1"><input id="answer-2"><input id="answer-3">' +
+        '<select id="correct-answer"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select>' +
+        '<textarea id="explanation"></textarea><input id="question-number"><input id="total-questions">';
+      const script = doc.createElement("script");
+      script.src = new URL("../quiz-library.js", location.href).href;
+      await new Promise(function (resolve, reject) {
+        script.onload = resolve;
+        script.onerror = reject;
+        doc.head.appendChild(script);
+      });
+      frame.contentWindow.confirm = function () { return true; };
+      const library = frame.contentWindow.createQuizLibrary();
+      library.connect(libraryRef, selectionRef);
+      library.setConnected(true);
+      return frame.contentWindow;
+    }
+    const pc = await setup("pc");
+    const mobile = await setup("mobile");
+    function select(win, key) {
+      const input = win.document.getElementById("saved-question");
+      input.value = key;
+      input.dispatchEvent(new win.Event("change"));
+    }
+    function question(win) { return win.document.getElementById("question").value; }
+    assert(question(pc) === "First" && question(mobile) === "First", "Initial shared selection was not loaded");
+    select(pc, "second");
+    assert(question(mobile) === "Second", "PC selection did not reach mobile");
+    select(mobile, "first");
+    assert(question(pc) === "First", "Mobile selection did not reach PC");
+    mobile.document.getElementById("question").value = "Unsaved edit";
+    select(pc, "second");
+    assert(question(mobile) === "Unsaved edit", "Remote selection overwrote an unsaved edit");
+    assert(mobile.document.getElementById("library-feedback").textContent.includes("unsaved"), "Unsaved edit warning missing");
+    mobile.document.getElementById("load-synced-question").click();
+    assert(question(mobile) === "Second", "Could not load the synced question");
+    pc.document.getElementById("question").value = "Updated";
+    pc.document.getElementById("question-number").value = "5";
+    pc.document.getElementById("total-questions").value = "8";
+    pc.document.getElementById("save-question").click();
+    await new Promise(function (resolve) { setTimeout(resolve, 0); });
+    assert(question(pc) === "Updated" && question(mobile) === "Updated", "Saved edits did not reach both controls");
+    assert(pc.document.getElementById("question-number").value === "5" && pc.document.getElementById("total-questions").value === "8", "Saving changed the host's question numbering");
+    rejectSelection = true;
+    select(pc, "first");
+    await new Promise(function (resolve) { setTimeout(resolve, 0); });
+    assert(question(mobile) === "Updated", "Failed selection changed the other control");
+    assert(pc.document.getElementById("library-feedback").textContent.includes("could not sync"), "Selection failure was not reported");
+    document.getElementById("result").textContent = "All quiz selection sync tests passed.";
+  }
+  runTests().catch(function (error) {
+    document.getElementById("result").textContent = "FAILED: " + error.message;
+    throw error;
+  });
+</script>

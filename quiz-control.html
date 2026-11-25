@@ -350,6 +350,7 @@
           </label>
           <div class="full-width">
             <div class="button-row">
+              <button class="action-button" id="load-synced-question" type="button" disabled>Load synced question</button>
               <button class="action-button" id="new-question" type="button">New question</button>
               <button class="action-button" id="save-question" type="button" disabled>Save question</button>
               <button class="action-button danger" id="delete-question" type="button" disabled>Delete selected question</button>
@@ -359,7 +360,7 @@
               <input id="csv-file" type="file" accept=".csv,text/csv" disabled>
               <span class="action-button">Choose and import CSV</span>
             </label>
-            <p class="feedback">Google Sheets: File → Download → CSV. The first imported question loads into the form; select the others above. Existing saved questions are kept.</p>
+            <p class="feedback">Saved-question selection syncs with mobile control. Google Sheets: File → Download → CSV. Import loads the first question and keeps existing saved questions.</p>
             <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional).</p>
           </div>
           <label class="full-width" for="question">Question text
@@ -757,7 +758,7 @@
           databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         });
         const database = firebase.database();
-        quizLibrary.connect(database.ref("quizQuestionLibrary"));
+        quizLibrary.connect(database.ref("quizQuestionLibrary"), database.ref("quizSelectedQuestion"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
           const offset = Number(value);

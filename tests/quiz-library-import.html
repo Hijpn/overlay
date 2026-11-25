@@ -3,6 +3,7 @@
 <title>Quiz import tests</title>
 <pre id="result">Running...</pre>
 <select id="saved-question"><option value="">New question</option></select>
+<button id="load-synced-question"></button>
 <button id="new-question"></button><button id="save-question"></button><button id="delete-question"></button>
 <input id="csv-file" type="file"><p id="library-feedback"></p>
 <textarea id="question"></textarea>
@@ -14,6 +15,8 @@
   async function runTests() {
     const data = {};
     let listener;
+    let selectionListener;
+    let selectedKey = null;
     let id = 0;
     const ref = {
       on: function (event, callback) {
@@ -27,8 +30,19 @@
         return Promise.resolve();
       }
     };
+    const selectionRef = {
+      on: function (event, callback) {
+        selectionListener = callback;
+        callback({ val: function () { return selectedKey; } });
+      },
+      set: function (key) {
+        selectedKey = key;
+        selectionListener({ val: function () { return selectedKey; } });
+        return Promise.resolve();
+      }
+    };
     const library = createQuizLibrary();
-    library.connect(ref);
+    library.connect(ref, selectionRef);
     library.setConnected(true);
     function upload(csv) {
       const transfer = new DataTransfer();
@@ -61,9 +75,9 @@
     assert(Object.keys(data).length === 2, "Invalid import changed saved questions");
     document.getElementById("new-question").click();
     const reopenedLibrary = createQuizLibrary();
-    reopenedLibrary.connect(ref);
+    reopenedLibrary.connect(ref, selectionRef);
     reopenedLibrary.setConnected(true);
-    assert(document.getElementById("question").value === "First", "Saved question was not loaded on reconnect");
+    assert(document.getElementById("question").value === "Second", "Synced question was not loaded on reconnect");
     document.getElementById("result").textContent = "All quiz import tests passed.";
   }
   runTests().catch(function (error) {

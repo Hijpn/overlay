@@ -7,6 +7,7 @@
   <title>Sky Stations - Mobile Quiz Control</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="quiz-library.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -231,6 +232,11 @@
 
     .action-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
+    .csv-upload { display: inline-flex; position: relative; margin-top: 8px; }
+    .csv-upload input { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; opacity: 0; }
+    .csv-upload input:disabled + span { opacity: 0.45; cursor: not-allowed; }
+    .csv-upload input:focus-visible + span { outline: 2px solid var(--amber); outline-offset: 3px; }
+
     .feedback, .live-summary {
       margin: 12px 0 0;
       color: var(--muted);
@@ -276,6 +282,24 @@
       <section class="card">
         <h2 class="section-heading">Question</h2>
         <div class="field-grid">
+          <label class="full-width" for="saved-question">Saved questions
+            <select id="saved-question" disabled><option value="">New question</option></select>
+          </label>
+          <div class="full-width">
+            <div class="button-row">
+              <button class="action-button" id="load-synced-question" type="button" disabled>Load synced question</button>
+              <button class="action-button" id="new-question" type="button">New question</button>
+              <button class="action-button" id="save-question" type="button" disabled>Save question</button>
+              <button class="action-button danger" id="delete-question" type="button" disabled>Delete selected question</button>
+            </div>
+            <p class="feedback" id="library-feedback" role="status" aria-live="polite">Connect to Firebase to manage saved questions.</p>
+            <label class="csv-upload">
+              <input id="csv-file" type="file" accept=".csv,text/csv" disabled>
+              <span class="action-button">Choose and import CSV</span>
+            </label>
+            <p class="feedback">Saved-question selection syncs with PC control. Google Sheets: File → Download → CSV. Import loads the first question and keeps existing saved questions.</p>
+            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional).</p>
+          </div>
           <label class="full-width" for="question">Question text
             <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>
           </label>
@@ -393,6 +417,7 @@
     const revealButton = document.getElementById("reveal-answer");
     const clearButton = document.getElementById("clear-overlay");
     const mobileThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
+    const quizLibrary = createQuizLibrary();
 
     let databaseRef = null;
     let mobileSettingsRef = null;
@@ -504,6 +529,7 @@
       verticalPositionSlider.disabled = !connected;
       explanationSizeSlider.disabled = !connected;
       designThemeSelect.disabled = !connected;
+      quizLibrary.setConnected(connected);
       updateButtons();
     }
 
@@ -637,6 +663,7 @@
           databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         });
         const database = firebase.database();
+        quizLibrary.connect(database.ref("quizQuestionLibrary"), database.ref("quizSelectedQuestion"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
           const offset = Number(value);

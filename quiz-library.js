@@ -84,13 +84,21 @@ function createQuizLibrary() {
   const save = document.getElementById("save-question");
   const remove = document.getElementById("delete-question");
   const file = document.getElementById("csv-file");
+  const loadSynced = document.getElementById("load-synced-question");
   const feedback = document.getElementById("library-feedback");
   let ref = null;
+  let selectionRef = null;
   let connected = false;
   let ready = false;
+  let selectionReady = false;
   let busy = false;
   let questions = {};
-  let firstSnapshot = true;
+  let selectedKey = null;
+  let appliedKey = "";
+  let appliedItem = null;
+  let loadedForm = null;
+  let ignoredSelection;
+  let initialized = false;
 
   function message(text, kind) {
     feedback.textContent = text;
@@ -98,11 +106,30 @@ function createQuizLibrary() {
   }
 
   function updateButtons() {
-    const unavailable = !connected || !ready || busy;
+    const unavailable = !connected || !ready || !selectionReady || busy;
     select.disabled = unavailable;
     save.disabled = unavailable;
     file.disabled = unavailable;
     remove.disabled = unavailable || !select.value;
+    loadSynced.disabled = unavailable || !selectedKey || !questions[selectedKey];
+  }
+
+  function formValues() {
+    return JSON.stringify([
+      document.getElementById("question").value,
+      ...[0, 1, 2, 3].map(function (index) { return document.getElementById("answer-" + index).value; }),
+      document.getElementById("correct-answer").value,
+      document.getElementById("explanation").value,
+      document.getElementById("question-number").value,
+      document.getElementById("total-questions").value
+    ]);
+  }
+
+  function hasUnsavedChanges() {
+    if (loadedForm !== null) return formValues() !== loadedForm;
+    return Boolean(document.getElementById("question").value ||
+      [0, 1, 2, 3].some(function (index) { return document.getElementById("answer-" + index).value; }) ||
+      document.getElementById("explanation").value);
   }
 
   function clearForm() {
@@ -113,6 +140,80 @@ function createQuizLibrary() {
     document.getElementById("explanation").value = "";
     document.getElementById("question-number").value = "1";
     document.getElementById("total-questions").value = "1";
+    appliedKey = "";
+    appliedItem = null;
+    ignoredSelection = selectedKey;
+    loadedForm = formValues();
+    updateButtons();
+  }
+
+  function loadQuestion(key) {
+    const item = questions[key];
+    if (!item) return;
+    select.value = key;
+    document.getElementById("question").value = item.question;
+    item.answers.forEach(function (answer, index) { document.getElementById("answer-" + index).value = answer; });
+    document.getElementById("correct-answer").value = String(item.correctIndex);
+    document.getElementById("explanation").value = item.explanation;
+    const keys = Object.keys(questions);
+    document.getElementById("question-number").value = String(Math.min(keys.indexOf(key) + 1, 999));
+    document.getElementById("total-questions").value = String(Math.min(keys.length, 999));
+    appliedKey = key;
+    appliedItem = JSON.stringify(item);
+    ignoredSelection = undefined;
+    loadedForm = formValues();
+    updateButtons();
+  }
+
+  function syncSelection() {
+    if (!ready || !selectionReady || busy) return;
+    if (!initialized) {
+      initialized = true;
+      if (!selectedKey && !hasUnsavedChanges()) {
+        const firstKey = Object.keys(questions)[0];
+        if (firstKey) loadQuestion(firstKey);
+        message("Saved questions are synced between PC and mobile.");
+        updateButtons();
+        return;
+      }
+    }
+    if (!appliedKey && ignoredSelection === selectedKey) return;
+    if (selectedKey && !questions[selectedKey]) {
+      message("The synced question is not available in the library. Your form is unchanged.", "error");
+    } else if (selectedKey && (selectedKey !== appliedKey || JSON.stringify(questions[selectedKey]) !== appliedItem)) {
+      if (hasUnsavedChanges()) {
+        message("The other control selected or changed a question. Your unsaved form is unchanged; use Load synced question to replace it.", "error");
+      } else {
+        loadQuestion(selectedKey);
+        message("Question synced between PC and mobile.");
+      }
+    } else if (!selectedKey && appliedKey && !questions[appliedKey]) {
+      if (hasUnsavedChanges()) {
+        message("The saved question was deleted. Your unsaved form is unchanged.", "error");
+      } else {
+        clearForm();
+        message("The selected question was deleted.");
+      }
+    }
+    updateButtons();
+  }
+
+  async function publishSelection(key) {
+    try {
+      await selectionRef.set(key);
+      return true;
+    } catch (error) {
+      console.error("Could not sync selected question:", error);
+      message("Question saved or loaded, but selection could not sync: " + error.message, "error");
+      return false;
+    }
+  }
+
+  function finishOperation() {
+    const error = feedback.classList.contains("error") ? feedback.textContent : null;
+    busy = false;
+    syncSelection();
+    if (error) message(error, "error");
     updateButtons();
   }
 
@@ -127,49 +228,39 @@ function createQuizLibrary() {
       return;
     }
     questions = data || {};
-    const selected = select.value;
     select.replaceChildren(new Option("New question", ""));
     Object.keys(questions).forEach(function (key) {
       select.add(new Option(questions[key].question, key));
     });
-    if (selected && questions[selected]) {
-      select.value = selected;
-    } else if (selected) {
-      message("The selected question no longer exists. Your unsaved form is unchanged.", "error");
-    } else if (!busy) {
-      message("Saved questions are synced with Firebase.");
-    }
+    if (appliedKey && questions[appliedKey]) select.value = appliedKey;
     ready = true;
-    if (firstSnapshot) {
-      firstSnapshot = false;
-      const firstKey = Object.keys(questions)[0];
-      const formIsEmpty = !document.getElementById("question").value &&
-        [0, 1, 2, 3].every(function (index) { return !document.getElementById("answer-" + index).value; }) &&
-        !document.getElementById("explanation").value;
-      if (firstKey && formIsEmpty) {
-        select.value = firstKey;
-        select.dispatchEvent(new Event("change"));
-      }
-    }
+    syncSelection();
     updateButtons();
   }
 
   select.addEventListener("change", function () {
-    const item = questions[select.value];
-    if (!item) {
+    const key = select.value;
+    if (hasUnsavedChanges() && !window.confirm("Replace your unsaved form with the selected question?")) {
+      select.value = appliedKey;
+      return;
+    }
+    if (!key) {
       clearForm();
       return;
     }
-    document.getElementById("question").value = item.question;
-    item.answers.forEach(function (answer, index) { document.getElementById("answer-" + index).value = answer; });
-    document.getElementById("correct-answer").value = String(item.correctIndex);
-    document.getElementById("explanation").value = item.explanation;
-    const keys = Object.keys(questions);
-    document.getElementById("question-number").value = String(Math.min(keys.indexOf(select.value) + 1, 999));
-    document.getElementById("total-questions").value = String(Math.min(keys.length, 999));
-    updateButtons();
+    loadQuestion(key);
+    publishSelection(key);
   });
-  document.getElementById("new-question").addEventListener("click", clearForm);
+  loadSynced.addEventListener("click", function () {
+    if (!selectedKey || !questions[selectedKey]) return;
+    if (hasUnsavedChanges() && !window.confirm("Replace your unsaved form with the synced question?")) return;
+    loadQuestion(selectedKey);
+    message("Question synced between PC and mobile.", "success");
+  });
+  document.getElementById("new-question").addEventListener("click", function () {
+    if (hasUnsavedChanges() && !window.confirm("Discard your unsaved form?")) return;
+    clearForm();
+  });
   save.addEventListener("click", async function () {
     const item = {
       question: document.getElementById("question").value.trim(),
@@ -181,20 +272,24 @@ function createQuizLibrary() {
       message("Enter a question, four answers, and a valid correct answer before saving.", "error");
       return;
     }
-    if (!connected || !ready || busy) return;
+    if (!connected || !ready || !selectionReady || busy) return;
     const target = select.value ? ref.child(select.value) : ref.push();
     busy = true;
     updateButtons();
     try {
       await target.set(item);
-      select.value = target.key;
-      message("Question saved.", "success");
+      const questionNumber = document.getElementById("question-number").value;
+      const totalQuestions = document.getElementById("total-questions").value;
+      loadQuestion(target.key);
+      document.getElementById("question-number").value = questionNumber;
+      document.getElementById("total-questions").value = totalQuestions;
+      loadedForm = formValues();
+      if (await publishSelection(target.key)) message("Question saved and synced.", "success");
     } catch (error) {
       console.error("Could not save question:", error);
       message("Could not save question: " + error.message, "error");
     } finally {
-      busy = false;
-      updateButtons();
+      finishOperation();
     }
   });
   remove.addEventListener("click", async function () {
@@ -202,21 +297,21 @@ function createQuizLibrary() {
     if (!window.confirm("Delete the selected saved question?")) return;
     busy = true;
     updateButtons();
+    const deletedKey = select.value;
     try {
-      await ref.child(select.value).remove();
+      await ref.child(deletedKey).remove();
       clearForm();
-      message("Question deleted.", "success");
+      if (selectedKey !== deletedKey || await publishSelection(null)) message("Question deleted.", "success");
     } catch (error) {
       console.error("Could not delete question:", error);
       message("Could not delete question: " + error.message, "error");
     } finally {
-      busy = false;
-      updateButtons();
+      finishOperation();
     }
   });
   file.addEventListener("change", async function () {
     const selectedFile = file.files[0];
-    if (!selectedFile || !connected || !ready || busy) return;
+    if (!selectedFile || !connected || !ready || !selectionReady || busy) return;
     const formHasContent = document.getElementById("question").value ||
       [0, 1, 2, 3].some(function (index) { return document.getElementById("answer-" + index).value; }) ||
       document.getElementById("explanation").value;
@@ -234,9 +329,10 @@ function createQuizLibrary() {
       await ref.update(updates);
       const firstKey = Object.keys(updates)[0];
       if (questions[firstKey]) {
-        select.value = firstKey;
-        select.dispatchEvent(new Event("change"));
-        message(items.length + " question(s) imported. The first question is ready to publish.", "success");
+        loadQuestion(firstKey);
+        if (await publishSelection(firstKey)) {
+          message(items.length + " question(s) imported. The first question is ready to publish.", "success");
+        }
       } else {
         message("Questions were imported, but the first question could not be loaded. Select a saved question above.", "error");
       }
@@ -245,18 +341,36 @@ function createQuizLibrary() {
       message("Could not import CSV: " + error.message, "error");
     } finally {
       file.value = "";
-      busy = false;
-      updateButtons();
+      finishOperation();
     }
   });
   return {
     setConnected: function (value) { connected = value; updateButtons(); },
-    connect: function (libraryRef) {
+    connect: function (libraryRef, selectedQuestionRef) {
       ref = libraryRef;
+      selectionRef = selectedQuestionRef;
       ref.on("value", render, function (error) {
         ready = false;
         message("Could not read saved questions: " + error.message, "error");
         console.error("Firebase question library listener failed:", error);
+        updateButtons();
+      });
+      selectionRef.on("value", function (snapshot) {
+        const key = snapshot.val();
+        if (key !== null && (typeof key !== "string" || !key || /[.#$\[\]\/]/.test(key))) {
+          selectionReady = false;
+          message("Firebase returned an invalid synced question.", "error");
+          console.error("Invalid synced question key:", key);
+        } else {
+          selectedKey = key;
+          selectionReady = true;
+          syncSelection();
+        }
+        updateButtons();
+      }, function (error) {
+        selectionReady = false;
+        message("Could not read the synced question: " + error.message, "error");
+        console.error("Firebase question selection listener failed:", error);
         updateButtons();
       });
     }
