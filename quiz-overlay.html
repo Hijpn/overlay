@@ -230,8 +230,7 @@
 
     .quiz-kind,
     .stub-label,
-    .timer-unit,
-    .barcode-number {
+    .timer-unit {
       color: var(--muted);
       font-size: 9px;
       font-weight: 700;
@@ -354,7 +353,7 @@
       position: relative;
       display: grid;
       min-width: 0;
-      grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 10px;
       padding: 21px 20px 17px;
       border-left: 1px dashed rgba(102, 228, 230, 0.48);
@@ -423,26 +422,252 @@
       text-align: center;
     }
 
-    .barcode {
-      width: 100%;
-      height: 34px;
-      border: 4px solid rgba(234, 245, 246, 0.92);
+    .quiz-ticket[data-theme="liquid-glass"] {
+      --ink: #fff;
+      --muted: rgba(245, 249, 255, 0.82);
+      --cyan: #a9eaff;
+      --amber: #ffe3a3;
+      --orange: #ffc9ee;
+      --panel: rgba(13, 25, 45, 0.48);
+      --line: rgba(255, 255, 255, 0.46);
+      border: 1px solid rgba(255, 255, 255, 0.46);
+      border-radius: 28px;
       background:
-        repeating-linear-gradient(
-          90deg,
-          #eaf5f6 0 2px,
-          transparent 2px 4px,
-          #eaf5f6 4px 5px,
-          transparent 5px 8px,
-          #eaf5f6 8px 11px,
-          transparent 11px 13px
-        );
+        radial-gradient(ellipse at 12% 0%, rgba(255, 255, 255, 0.28), transparent 42%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(179, 218, 255, 0.08) 52%, rgba(255, 255, 255, 0.035)),
+        rgba(13, 25, 45, 0.52);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.34),
+        inset 0 -18px 42px rgba(147, 186, 255, 0.08),
+        0 24px 70px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(28px) saturate(185%);
     }
 
-    .barcode-number {
-      font-size: 8px;
-      letter-spacing: 0.12em;
-      text-align: center;
+    .quiz-ticket[data-theme="liquid-glass"] .ticket-main {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), transparent 66%);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .boarding-stub {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.13), rgba(164, 199, 255, 0.055));
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .answer {
+      border-color: rgba(255, 255, 255, 0.52);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.055));
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.16), 0 8px 24px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(14px) saturate(150%);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .answer-key {
+      border-color: rgba(255, 255, 255, 0.46);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .answer.correct {
+      border-color: rgba(159, 255, 209, 0.9);
+      background: linear-gradient(135deg, rgba(87, 231, 167, 0.88), rgba(66, 181, 154, 0.72));
+      color: #06271d;
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .timer-track {
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.22), 0 0 18px rgba(143, 222, 255, 0.2);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .timer-fill {
+      background: linear-gradient(90deg, #6cd9ff, #b9f4ff 48%, #f5bbeb);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .quiz-status {
+      border-color: rgba(255, 255, 255, 0.46);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .quiz-ticket[data-theme="liquid-glass"] .ticket-footer {
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] {
+      --ink: #f2f7ff;
+      --muted: #c1d0e7;
+      --cyan: #a9bfff;
+      --amber: #f0c4ff;
+      --orange: #e6a8ff;
+      --panel: rgba(12, 21, 43, 0.48);
+      --line: rgba(214, 225, 255, 0.4);
+      border: 1px solid rgba(214, 225, 255, 0.42);
+      border-radius: 24px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 48%),
+        linear-gradient(145deg, rgba(22, 38, 72, 0.58), rgba(26, 22, 57, 0.52)),
+        rgba(12, 21, 43, 0.48);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 24px 64px rgba(4, 7, 28, 0.42);
+      backdrop-filter: blur(24px) saturate(155%);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .boarding-stub {
+      border-color: rgba(197, 211, 255, 0.42);
+      background: linear-gradient(150deg, rgba(112, 132, 203, 0.22), rgba(67, 45, 116, 0.2));
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .answer {
+      border-color: rgba(219, 225, 255, 0.48);
+      border-radius: 12px;
+      background: linear-gradient(115deg, rgba(119, 144, 226, 0.28), rgba(154, 100, 191, 0.2));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 24px rgba(11, 12, 42, 0.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .answer-key {
+      border-color: rgba(230, 234, 255, 0.56);
+      border-radius: 50%;
+      background: rgba(25, 30, 71, 0.34);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .answer.correct {
+      border-color: rgba(118, 240, 189, 0.9);
+      background: linear-gradient(120deg, rgba(57, 205, 157, 0.9), rgba(73, 163, 183, 0.82));
+      color: #071d22;
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .timer-track {
+      background: rgba(23, 28, 62, 0.68);
+      box-shadow: 0 0 20px rgba(141, 156, 255, 0.16);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .timer-fill {
+      background: linear-gradient(90deg, #668cff, #ad89ff 55%, #f08edb);
+    }
+
+    .quiz-ticket[data-theme="glassmorphism"] .quiz-status {
+      border-color: rgba(197, 211, 255, 0.52);
+      border-radius: 10px;
+      background: rgba(101, 116, 184, 0.2);
+    }
+
+    .quiz-ticket[data-theme="aurora"] {
+      --ink: #f0fffc;
+      --muted: #b7d9d4;
+      --cyan: #8dffe1;
+      --amber: #d7b4ff;
+      --orange: #c49bff;
+      --panel: rgba(5, 23, 31, 0.88);
+      --line: rgba(141, 255, 225, 0.56);
+      border-color: rgba(141, 255, 225, 0.58);
+      border-radius: 18px;
+      background:
+        radial-gradient(ellipse at 5% 10%, rgba(42, 239, 177, 0.2), transparent 42%),
+        radial-gradient(ellipse at 96% 100%, rgba(158, 95, 255, 0.23), transparent 46%),
+        rgba(5, 23, 31, 0.92);
+      box-shadow: 0 0 42px rgba(48, 231, 180, 0.13), 0 20px 55px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(16px);
+    }
+
+    .quiz-ticket[data-theme="aurora"] .boarding-stub {
+      border-color: rgba(141, 255, 225, 0.46);
+      background:
+        radial-gradient(ellipse at 20% 5%, rgba(42, 239, 177, 0.16), transparent 56%),
+        linear-gradient(150deg, rgba(19, 70, 65, 0.52), rgba(42, 34, 79, 0.4));
+    }
+
+    .quiz-ticket[data-theme="aurora"] .answer {
+      border-color: rgba(141, 255, 225, 0.66);
+      border-radius: 10px;
+      background: linear-gradient(105deg, rgba(33, 155, 132, 0.34), rgba(96, 65, 144, 0.3));
+    }
+
+    .quiz-ticket[data-theme="aurora"] .answer-key {
+      border-color: rgba(141, 255, 225, 0.72);
+      border-radius: 50%;
+    }
+
+    .quiz-ticket[data-theme="aurora"] .answer.correct {
+      border-color: #8affc7;
+      background: linear-gradient(105deg, #62eeb7, #9bdbb7);
+      color: #08251d;
+    }
+
+    .quiz-ticket[data-theme="aurora"] .timer-track {
+      background: rgba(8, 41, 46, 0.9);
+    }
+
+    .quiz-ticket[data-theme="aurora"] .timer-fill {
+      background: linear-gradient(90deg, #52f0bc, #8cebc8 48%, #b18bff);
+    }
+
+    .quiz-ticket[data-theme="aurora"] .quiz-status {
+      border-color: rgba(141, 255, 225, 0.56);
+      background: linear-gradient(105deg, rgba(33, 155, 132, 0.28), rgba(96, 65, 144, 0.26));
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] {
+      --ink: #e5f7ff;
+      --muted: #9bbcca;
+      --cyan: #59dbff;
+      --amber: #ffcf70;
+      --orange: #38a9d8;
+      --panel: rgba(3, 16, 27, 0.96);
+      --line: rgba(89, 219, 255, 0.58);
+      border: 1px solid rgba(89, 219, 255, 0.72);
+      border-left: 6px solid var(--cyan);
+      border-right: 1px solid rgba(89, 219, 255, 0.58);
+      border-radius: 7px;
+      background: rgba(3, 16, 27, 0.96);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), inset 0 0 30px rgba(89, 219, 255, 0.06);
+      backdrop-filter: blur(14px);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .ticket-main {
+      background: linear-gradient(145deg, rgba(18, 45, 60, 0.42), transparent 68%);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .boarding-stub {
+      border-left-style: solid;
+      border-color: rgba(89, 219, 255, 0.48);
+      background: rgba(8, 29, 42, 0.84);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .answer {
+      border-color: rgba(131, 190, 210, 0.58);
+      border-radius: 5px;
+      background: rgba(12, 39, 54, 0.86);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .answer-key {
+      border-color: rgba(89, 219, 255, 0.54);
+      border-radius: 3px;
+      background: rgba(89, 219, 255, 0.12);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .answer.correct {
+      border-color: #80f2a5;
+      background: rgba(55, 148, 105, 0.86);
+      color: #effff7;
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .timer-value {
+      color: var(--cyan);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .timer-track {
+      height: 6px;
+      border-radius: 2px;
+      background: rgba(89, 219, 255, 0.15);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .timer-fill {
+      background: linear-gradient(90deg, #21b7ec, #6be5fa);
+    }
+
+    .quiz-ticket[data-theme="minimal-atc"] .quiz-status {
+      border-color: rgba(89, 219, 255, 0.48);
+      border-radius: 3px;
+      background: rgba(18, 45, 60, 0.68);
     }
 
     @media (max-width: 700px) {
@@ -544,11 +769,6 @@
         grid-column: 1 / -1;
         min-height: 44px;
         font-size: 13px;
-      }
-
-      .barcode,
-      .barcode-number {
-        display: none;
       }
 
       .stub-label {
@@ -660,7 +880,7 @@
       </div>
     </section>
 
-    <article class="quiz-ticket">
+    <article class="quiz-ticket" id="quiz-ticket" data-theme="flight-deck">
       <section class="ticket-main" aria-live="polite">
         <header class="quiz-header">
           <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
@@ -678,7 +898,6 @@
 
         <footer class="ticket-footer">
           <span class="footer-label">Choose an answer before time runs out</span>
-          <span class="footer-label">Flight SS 042</span>
         </footer>
       </section>
 
@@ -693,13 +912,12 @@
           </div>
         </div>
         <div class="quiz-status" id="quiz-status">WAITING FOR HOST</div>
-        <div class="barcode" aria-hidden="true"></div>
-        <span class="barcode-number">SS042 - QUIZ - A1B2C3</span>
       </aside>
     </article>
   </main>
 
   <script>
+    const quizTicket = document.getElementById("quiz-ticket");
     const questionElement = document.getElementById("question");
     const answersElement = document.getElementById("answers");
     const feedbackElement = document.getElementById("feedback");
@@ -716,6 +934,7 @@
     const answerSizeValue = document.getElementById("answer-size-value");
     const settingsStatus = document.getElementById("settings-status");
     const defaultTextSizes = { question: 40, answer: 44 };
+    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
     const textSettingsKey = "sky-stations-quiz-text-sizes";
 
     let timerId = 0;
@@ -805,6 +1024,18 @@
       }
     }
 
+    function applyRemoteDesignTheme(snapshot) {
+      const theme = snapshot.exists() ? snapshot.val() : "flight-deck";
+      if (typeof theme !== "string" || !overlayThemes.includes(theme)) {
+        settingsStatus.textContent = "The control panel sent an invalid overlay design.";
+        console.error("Invalid Firebase quiz overlay design:", theme);
+        return;
+      }
+
+      quizTicket.dataset.theme = theme;
+      settingsStatus.textContent = "Design synced from Quiz Control.";
+    }
+
     const savedTextSizes = loadTextSizes();
     questionSizeSlider.value = String(savedTextSizes.question);
     answerSizeSlider.value = String(savedTextSizes.answer);
@@ -887,9 +1118,8 @@
       if (!currentQuiz) return;
       clearTimer();
       renderAnswers(currentQuiz, true);
-      feedbackElement.textContent = (timedOut ? "Time's up. " : "Answer revealed. ") +
-        currentQuiz.explanation;
-      quizStatus.textContent = timedOut ? "TIME UP" : "ANSWER REVEALED";
+      feedbackElement.textContent = (timedOut ? "Time's up. " : "") + currentQuiz.explanation;
+      quizStatus.textContent = timedOut ? "TIME UP" : "ANSWER";
     }
 
     function renderQuizState(state) {
@@ -944,8 +1174,8 @@
       renderAnswers(currentQuiz, state.status === "revealed");
 
       if (state.status === "revealed") {
-        feedbackElement.textContent = "Answer revealed. " + currentQuiz.explanation;
-        quizStatus.textContent = "ANSWER REVEALED";
+        feedbackElement.textContent = currentQuiz.explanation;
+        quizStatus.textContent = "ANSWER";
         return;
       }
 
@@ -992,6 +1222,10 @@
         database.ref("quizOverlaySettings/fontSizes").on("value", applyRemoteTextSizes, function (error) {
           settingsStatus.textContent = "Couldn't sync text sizes from Quiz Control.";
           console.error("Firebase text-size listener failed:", error);
+        });
+        database.ref("quizOverlaySettings/designTheme").on("value", applyRemoteDesignTheme, function (error) {
+          settingsStatus.textContent = "Couldn't sync the overlay design from Quiz Control.";
+          console.error("Firebase overlay-design listener failed:", error);
         });
       } catch (error) {
         showFirebaseError("Couldn't connect to Firebase. Check the database configuration.", error);

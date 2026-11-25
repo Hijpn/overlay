@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131c">
+  <title>Sky Stations - Mobile Quiz Overlay</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      --ink: #f5f8fc;
+      --muted: #c1ccd5;
+      --cyan: #2799ff;
+      --orange: #ff8a36;
+      --green: #63f126;
+      --panel: rgba(6, 13, 23, 0.9);
+      --question-size: 40px;
+      --answer-size: 44px;
+      --explanation-size: 18px;
+      --overlay-offset-y: 0vh;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body { color: var(--ink); }
+
+    .overlay {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      container-type: inline-size;
+      isolation: isolate;
+    }
+
+    .quiz-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(88%, 820px);
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: clamp(12px, 3.2cqw, 32px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: clamp(14px, 2.8cqw, 28px);
+      background:
+        linear-gradient(145deg, rgba(10, 25, 43, 0.94), var(--panel)),
+        var(--panel);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+      transform: translate(-50%, calc(-50% + var(--overlay-offset-y)));
+      backdrop-filter: blur(12px);
+    }
+
+    .question {
+      margin: 0;
+      padding: 12px 14px;
+      border: 3px solid rgba(63, 157, 255, 0.86);
+      border-radius: clamp(12px, 2.6cqw, 26px);
+      color: var(--ink);
+      font-size: clamp(20px, min(7.4cqw, var(--question-size)), 58px);
+      font-weight: 850;
+      line-height: 1.1;
+      text-align: center;
+      text-wrap: balance;
+      text-transform: uppercase;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    .timer {
+      margin: clamp(16px, 3.4cqw, 30px) 0 clamp(20px, 4cqw, 36px);
+      text-align: center;
+    }
+
+    .round-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: clamp(12px, 2.8cqw, 26px);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .timer-track {
+      position: relative;
+      height: clamp(34px, 7cqw, 66px);
+      overflow: hidden;
+      padding: 4px;
+      border: 4px solid transparent;
+      border-radius: 999px;
+      background:
+        linear-gradient(#101b2a, #101b2a) padding-box,
+        linear-gradient(100deg, var(--cyan), var(--orange)) border-box;
+      box-shadow: 0 0 18px rgba(39, 153, 255, 0.24);
+    }
+
+    .timer-fill {
+      position: absolute;
+      inset: 4px;
+      background: linear-gradient(100deg, #178dff, #4baaff 70%, #ff8a36);
+      border-radius: inherit;
+      transform-origin: left center;
+      transition: transform 120ms linear;
+    }
+
+    .timer-label {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      height: 100%;
+      place-items: center;
+      color: #fff;
+      font-size: clamp(13px, 3.4cqw, 30px);
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .answers {
+      display: grid;
+      gap: clamp(12px, 2.8cqw, 26px);
+    }
+
+    .answer {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      min-height: clamp(56px, 9.6cqw, 96px);
+      align-items: center;
+      justify-content: center;
+      padding: 8px 52px;
+      border: 3px solid rgba(255, 255, 255, 0.92);
+      border-radius: 999px;
+      background: rgba(110, 113, 120, 0.7);
+      color: #fff;
+      font-size: clamp(17px, min(5.4cqw, var(--answer-size)), 40px);
+      font-weight: 850;
+      line-height: 1.12;
+      text-align: center;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+      transition: background-color 180ms ease, opacity 180ms ease, border-color 180ms ease;
+    }
+
+    .answer-key {
+      position: absolute;
+      left: clamp(10px, 2cqw, 20px);
+      display: grid;
+      width: 1.35em;
+      height: 1.35em;
+      flex: 0 0 1.35em;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.34);
+      font-size: 0.82em;
+    }
+
+    .answer-label {
+      width: 100%;
+      min-width: 0;
+      text-align: center;
+    }
+
+    .answer.correct {
+      border-color: var(--green);
+      background: var(--green);
+      color: #10220a;
+    }
+
+    .answer.incorrect {
+      border-color: rgba(255, 255, 255, 0.68);
+      background: rgba(80, 84, 91, 0.58);
+      color: rgba(255, 255, 255, 0.64);
+    }
+
+    .answer.incorrect .answer-key { background: rgba(0, 0, 0, 0.22); }
+    .answer.dimmed { opacity: 0.55; }
+
+    .feedback {
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: clamp(12px, 2.5cqw, 22px);
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .feedback-explanation {
+      display: block;
+      margin-top: 4px;
+      font-size: clamp(14px, var(--explanation-size), 48px);
+    }
+
+    .feedback-explanation:empty { display: none; }
+
+    .waiting {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 3cqw, 26px);
+      text-align: center;
+    }
+
+    .quiz-card[data-theme="liquid-glass"] {
+      --ink: #fff;
+      --muted: rgba(245, 249, 255, 0.82);
+      --cyan: #a9eaff;
+      --orange: #ffc9ee;
+      --green: #9fffd1;
+      border: 1px solid rgba(255, 255, 255, 0.46);
+      border-radius: clamp(22px, 5cqw, 42px);
+      background:
+        radial-gradient(ellipse at 14% 0%, rgba(255, 255, 255, 0.3), transparent 42%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.19), rgba(179, 218, 255, 0.09) 52%, rgba(255, 255, 255, 0.045)),
+        rgba(13, 25, 45, 0.48);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.34),
+        inset 0 -18px 42px rgba(147, 186, 255, 0.08),
+        0 24px 70px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(28px) saturate(185%);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .question {
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      background: rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(14px);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .timer-track {
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      background: rgba(255, 255, 255, 0.13);
+      box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.22), 0 0 22px rgba(143, 222, 255, 0.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .timer-fill {
+      background: linear-gradient(100deg, #6cd9ff, #b9f4ff 48%, #f5bbeb);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .answer {
+      border: 1px solid rgba(255, 255, 255, 0.54);
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.055));
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 8px 24px rgba(0, 0, 0, 0.12);
+      backdrop-filter: blur(14px) saturate(150%);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .answer-key {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .quiz-card[data-theme="liquid-glass"] .answer.correct {
+      border-color: rgba(159, 255, 209, 0.9);
+      background: linear-gradient(135deg, rgba(87, 231, 167, 0.88), rgba(66, 181, 154, 0.72));
+      color: #06271d;
+    }
+
+    .quiz-card[data-theme="glassmorphism"] {
+      --ink: #f2f7ff;
+      --muted: #c1d0e7;
+      --cyan: #9dbbff;
+      --orange: #e6a8ff;
+      --green: #76f0bd;
+      border: 1px solid rgba(214, 225, 255, 0.4);
+      border-radius: clamp(18px, 4cqw, 34px);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 48%),
+        linear-gradient(145deg, rgba(22, 38, 72, 0.55), rgba(26, 22, 57, 0.48)),
+        rgba(12, 21, 43, 0.4);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 24px 64px rgba(4, 7, 28, 0.4);
+      backdrop-filter: blur(24px) saturate(155%);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .question {
+      border: 1px solid rgba(197, 211, 255, 0.58);
+      background: linear-gradient(120deg, rgba(133, 166, 255, 0.22), rgba(222, 149, 255, 0.12));
+      box-shadow: 0 8px 28px rgba(14, 14, 48, 0.2);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .timer-track {
+      border: 1px solid rgba(225, 230, 255, 0.54);
+      background: rgba(23, 28, 62, 0.56);
+      box-shadow: 0 0 20px rgba(141, 156, 255, 0.16);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .timer-fill {
+      background: linear-gradient(100deg, #668cff, #ad89ff 55%, #f08edb);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .answer {
+      border: 1px solid rgba(219, 225, 255, 0.5);
+      border-radius: 18px;
+      background: linear-gradient(115deg, rgba(119, 144, 226, 0.28), rgba(154, 100, 191, 0.2));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 24px rgba(11, 12, 42, 0.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .answer-key {
+      border: 1px solid rgba(230, 234, 255, 0.56);
+      background: rgba(25, 30, 71, 0.34);
+    }
+
+    .quiz-card[data-theme="glassmorphism"] .answer.correct {
+      border-color: rgba(118, 240, 189, 0.9);
+      background: linear-gradient(120deg, rgba(57, 205, 157, 0.9), rgba(73, 163, 183, 0.82));
+      color: #071d22;
+    }
+
+    .quiz-card[data-theme="aurora"] {
+      --ink: #f0fffc;
+      --muted: #b7d9d4;
+      --cyan: #8dffe1;
+      --orange: #c49bff;
+      --green: #8affc7;
+      border: 1px solid rgba(141, 255, 225, 0.56);
+      border-radius: clamp(16px, 3cqw, 28px);
+      background:
+        radial-gradient(ellipse at 5% 10%, rgba(42, 239, 177, 0.2), transparent 45%),
+        radial-gradient(ellipse at 95% 100%, rgba(158, 95, 255, 0.24), transparent 48%),
+        rgba(5, 23, 31, 0.88);
+      box-shadow: 0 0 40px rgba(48, 231, 180, 0.12), 0 20px 55px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(16px);
+    }
+
+    .quiz-card[data-theme="aurora"] .question {
+      border-color: rgba(141, 255, 225, 0.78);
+      background: linear-gradient(115deg, rgba(31, 171, 142, 0.22), rgba(117, 75, 181, 0.24));
+    }
+
+    .quiz-card[data-theme="aurora"] .timer-track {
+      background: linear-gradient(#0b292e, #0b292e) padding-box, linear-gradient(90deg, #55f0c1, #b191ff) border-box;
+      box-shadow: 0 0 20px rgba(85, 240, 193, 0.18);
+    }
+
+    .quiz-card[data-theme="aurora"] .timer-fill {
+      background: linear-gradient(90deg, #52f0bc, #8cebc8 48%, #b18bff);
+    }
+
+    .quiz-card[data-theme="aurora"] .answer {
+      border-color: rgba(141, 255, 225, 0.74);
+      border-radius: 14px;
+      background: linear-gradient(105deg, rgba(33, 155, 132, 0.42), rgba(96, 65, 144, 0.34));
+    }
+
+    .quiz-card[data-theme="aurora"] .answer.correct {
+      border-color: #8affc7;
+      background: linear-gradient(105deg, #62eeb7, #9bdbb7);
+      color: #08251d;
+    }
+
+    .quiz-card[data-theme="minimal-atc"] {
+      --ink: #e5f7ff;
+      --muted: #9bbcca;
+      --cyan: #59dbff;
+      --orange: #ffcf70;
+      --green: #80f2a5;
+      padding: clamp(12px, 2.8cqw, 26px);
+      border: 1px solid rgba(89, 219, 255, 0.7);
+      border-left: 6px solid var(--cyan);
+      border-radius: 8px;
+      background: rgba(3, 16, 27, 0.94);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), inset 0 0 30px rgba(89, 219, 255, 0.06);
+      backdrop-filter: blur(14px);
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .question {
+      border: 0;
+      border-left: 3px solid var(--cyan);
+      border-radius: 0;
+      background: rgba(18, 45, 60, 0.5);
+      text-align: left;
+      text-transform: none;
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .timer-track {
+      height: clamp(26px, 5.5cqw, 48px);
+      border: 1px solid rgba(89, 219, 255, 0.5);
+      border-radius: 4px;
+      background: rgba(8, 29, 42, 0.9);
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .timer-fill {
+      background: linear-gradient(90deg, #21b7ec, #6be5fa);
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .answer {
+      border: 1px solid rgba(131, 190, 210, 0.58);
+      border-radius: 6px;
+      background: rgba(12, 39, 54, 0.86);
+      text-transform: none;
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .answer-key {
+      border-radius: 4px;
+      background: rgba(89, 219, 255, 0.16);
+    }
+
+    .quiz-card[data-theme="minimal-atc"] .answer.correct {
+      border-color: var(--green);
+      background: rgba(55, 148, 105, 0.9);
+      color: #effff7;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 420px) {
+      .quiz-card { width: 92%; }
+      .question { padding: 10px 9px; border-width: 2px; }
+      .timer-track { border-width: 3px; }
+      .answer { min-height: 56px; padding: 7px 40px; border-width: 2px; }
+    }
+
+    @media (max-height: 560px) {
+      .quiz-card { max-height: 94vh; }
+      .timer { margin: 12px 0 16px; }
+      .answers { gap: 10px; }
+      .answer { min-height: 44px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="overlay" aria-label="Vertical live quiz overlay">
+    <article class="quiz-card" id="quiz-card" data-theme="flight-deck" aria-live="polite">
+      <h1 class="question" id="question" hidden></h1>
+      <div class="timer" id="timer" hidden>
+        <span class="round-label" id="round-label">QUESTION 1 / 6</span>
+        <div
+          class="timer-track"
+          id="timer-track"
+          role="progressbar"
+          aria-label="Time left to answer"
+          aria-valuemin="0"
+          aria-valuemax="20"
+          aria-valuenow="0"
+        >
+          <div class="timer-fill" id="timer-fill"></div>
+          <span class="timer-label" id="timer-label">20 SEC LEFT</span>
+        </div>
+      </div>
+      <div class="answers" id="answers" role="list" aria-label="Answer options"></div>
+      <p class="feedback" id="feedback" hidden>
+        <span id="feedback-label"></span>
+        <span class="feedback-explanation" id="feedback-explanation"></span>
+      </p>
+      <p class="waiting" id="waiting">Open Quiz Control and publish a question to begin.</p>
+    </article>
+  </main>
+
+  <script>
+    const questionElement = document.getElementById("question");
+    const answersElement = document.getElementById("answers");
+    const feedbackElement = document.getElementById("feedback");
+    const feedbackLabel = document.getElementById("feedback-label");
+    const feedbackExplanation = document.getElementById("feedback-explanation");
+    const quizCard = document.getElementById("quiz-card");
+    const waitingElement = document.getElementById("waiting");
+    const roundLabel = document.getElementById("round-label");
+    const timerElement = document.getElementById("timer");
+    const timerFill = document.getElementById("timer-fill");
+    const timerLabel = document.getElementById("timer-label");
+    const timerTrack = document.getElementById("timer-track");
+    const defaultTextSizes = { question: 40, answer: 44 };
+    const mobileThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
+
+    let timerId = 0;
+    let currentQuiz = null;
+    let serverTimeOffset = 0;
+
+    function updateTimer(secondsLeft, durationSeconds) {
+      const progress = durationSeconds > 0
+        ? Math.max(0, Math.min(1, secondsLeft / durationSeconds))
+        : 0;
+      const seconds = Math.max(0, Math.ceil(secondsLeft));
+      timerFill.style.transform = "scaleX(" + progress + ")";
+      timerLabel.textContent = seconds + (seconds === 1 ? " SEC LEFT" : " SECS LEFT");
+      timerTrack.setAttribute("aria-valuemax", String(durationSeconds));
+      timerTrack.setAttribute("aria-valuenow", String(seconds));
+    }
+
+    function clearTimer() {
+      window.clearInterval(timerId);
+      timerId = 0;
+    }
+
+    function showWaiting(message) {
+      clearTimer();
+      currentQuiz = null;
+      questionElement.hidden = true;
+      timerElement.hidden = true;
+      answersElement.replaceChildren();
+      feedbackElement.hidden = true;
+      feedbackLabel.textContent = "";
+      feedbackExplanation.textContent = "";
+      waitingElement.hidden = false;
+      waitingElement.textContent = message;
+    }
+
+    function renderAnswers(quiz, revealAnswer) {
+      answersElement.replaceChildren();
+      quiz.answers.forEach(function (answer, index) {
+        const row = document.createElement("div");
+        const key = document.createElement("span");
+        const label = document.createElement("span");
+        row.className = "answer";
+        row.setAttribute("role", "listitem");
+        if (revealAnswer) {
+          row.classList.add(index === quiz.correctIndex ? "correct" : "incorrect");
+        }
+        key.className = "answer-key";
+        key.textContent = String(index + 1);
+        label.className = "answer-label";
+        label.textContent = answer;
+        row.append(key, label);
+        answersElement.appendChild(row);
+      });
+    }
+
+    function revealCurrentAnswer(timedOut) {
+      if (!currentQuiz) return;
+      clearTimer();
+      renderAnswers(currentQuiz, true);
+      feedbackElement.hidden = false;
+      timerLabel.textContent = timedOut ? "TIME'S UP" : "ANSWER";
+      feedbackLabel.textContent = timedOut ? "Time is up." : "";
+      feedbackExplanation.textContent = currentQuiz.explanation;
+    }
+
+    function renderQuizState(state) {
+      if (!state || state.status === "idle") {
+        showWaiting("Open Quiz Control and publish a question to begin.");
+        return;
+      }
+
+      if (state.status === "complete") {
+        showWaiting("Quiz complete. Thanks for playing!");
+        return;
+      }
+
+      const durationSeconds = Number(state.durationSeconds);
+      const endsAt = Number(state.endsAt);
+      if ((state.status !== "active" && state.status !== "revealed") ||
+          typeof state.question !== "string" ||
+          !Array.isArray(state.answers) ||
+          state.answers.length !== 4 ||
+          !state.answers.every(function (answer) { return typeof answer === "string"; }) ||
+          !Number.isInteger(Number(state.correctIndex)) ||
+          Number(state.correctIndex) < 0 ||
+          Number(state.correctIndex) >= state.answers.length ||
+          !Number.isFinite(durationSeconds) || durationSeconds < 5 || durationSeconds > 120 ||
+          !Number.isFinite(endsAt)) {
+        showWaiting("The host sent invalid quiz data. Please republish the question.");
+        return;
+      }
+
+      clearTimer();
+      currentQuiz = {
+        answers: state.answers,
+        correctIndex: Number(state.correctIndex),
+        explanation: typeof state.explanation === "string" ? state.explanation : "",
+        durationSeconds: durationSeconds,
+        endsAt: endsAt
+      };
+      questionElement.textContent = state.question;
+      questionElement.hidden = false;
+      waitingElement.hidden = true;
+      timerElement.hidden = false;
+
+      const questionNumber = Number(state.questionNumber);
+      const totalQuestions = Number(state.totalQuestions);
+      roundLabel.textContent = Number.isInteger(questionNumber) && questionNumber > 0
+        ? "QUESTION " + questionNumber +
+          (Number.isInteger(totalQuestions) && totalQuestions >= questionNumber
+            ? " / " + totalQuestions
+            : "")
+        : "LIVE QUESTION";
+
+      renderAnswers(currentQuiz, state.status === "revealed");
+      if (state.status === "revealed") {
+        updateTimer(0, durationSeconds);
+        feedbackElement.hidden = false;
+        timerLabel.textContent = "ANSWER";
+        feedbackLabel.textContent = "";
+        feedbackExplanation.textContent = currentQuiz.explanation;
+        return;
+      }
+
+      feedbackElement.hidden = true;
+      feedbackLabel.textContent = "";
+      feedbackExplanation.textContent = "";
+      function tick() {
+        const secondsLeft = Math.max(0, (endsAt - (Date.now() + serverTimeOffset)) / 1000);
+        updateTimer(secondsLeft, durationSeconds);
+        if (secondsLeft <= 0) revealCurrentAnswer(true);
+      }
+
+      tick();
+      if (currentQuiz) timerId = window.setInterval(tick, 100);
+    }
+
+    function applyRemoteTextSizes(snapshot) {
+      if (!snapshot.exists()) return;
+      const sizes = snapshot.val();
+      if (!sizes || typeof sizes !== "object") {
+        console.error("Firebase returned invalid quiz text sizes:", sizes);
+        return;
+      }
+
+      const question = Object.prototype.hasOwnProperty.call(sizes, "question")
+        ? sizes.question
+        : defaultTextSizes.question;
+      const answer = Object.prototype.hasOwnProperty.call(sizes, "answer")
+        ? sizes.answer
+        : defaultTextSizes.answer;
+      if (!Number.isInteger(question) || question < 28 || question > 50 ||
+          !Number.isInteger(answer) || answer < 18 || answer > 80) {
+        console.error("Firebase returned invalid quiz text sizes:", sizes);
+        return;
+      }
+
+      document.documentElement.style.setProperty("--question-size", question + "px");
+      document.documentElement.style.setProperty("--answer-size", answer + "px");
+    }
+
+    function applyRemoteMobileSettings(snapshot) {
+      const settings = snapshot.val();
+      if (settings === null) return;
+      if (!settings || typeof settings !== "object") {
+        console.error("Firebase returned invalid mobile overlay settings:", settings);
+        return;
+      }
+
+      const offset = Object.prototype.hasOwnProperty.call(settings, "verticalOffset")
+        ? settings.verticalOffset
+        : 0;
+      const explanationSize = Object.prototype.hasOwnProperty.call(settings, "explanationSize")
+        ? settings.explanationSize
+        : Object.prototype.hasOwnProperty.call(settings, "revealedSize")
+          ? settings.revealedSize
+          : 18;
+      const designTheme = Object.prototype.hasOwnProperty.call(settings, "designTheme")
+        ? settings.designTheme
+        : "flight-deck";
+      if (!Number.isInteger(offset) || offset < -25 || offset > 25 ||
+          !Number.isInteger(explanationSize) || explanationSize < 18 || explanationSize > 48 ||
+          !mobileThemes.includes(designTheme)) {
+        console.error("Firebase returned invalid or out-of-range mobile overlay settings:", settings);
+        return;
+      }
+
+      document.documentElement.style.setProperty("--overlay-offset-y", offset + "vh");
+      document.documentElement.style.setProperty("--explanation-size", explanationSize + "px");
+      quizCard.dataset.theme = designTheme;
+    }
+
+    function showFirebaseError(message, error) {
+      if (error) console.error(message, error);
+      showWaiting(message);
+    }
+
+    if (typeof firebase === "undefined") {
+      showFirebaseError("Firebase could not load. Check the network connection.");
+    } else {
+      try {
+        firebase.initializeApp({
+          databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
+        });
+        const database = firebase.database();
+        database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
+          const value = snapshot.val();
+          const offset = Number(value);
+          if (typeof value === "number" && Number.isFinite(offset)) {
+            serverTimeOffset = offset;
+          }
+        }, function (error) {
+          console.error("Firebase server clock unavailable:", error);
+        });
+        database.ref("quizOverlayState").on("value", function (snapshot) {
+          renderQuizState(snapshot.val());
+        }, function (error) {
+          showFirebaseError("Couldn't read the live quiz. Check Firebase database permissions.", error);
+        });
+        database.ref("quizOverlaySettings/fontSizes").on("value", applyRemoteTextSizes, function (error) {
+          console.error("Firebase text-size listener failed:", error);
+        });
+        database.ref("quizOverlaySettings/mobile").on("value", applyRemoteMobileSettings, function (error) {
+          console.error("Firebase mobile settings listener failed:", error);
+        });
+      } catch (error) {
+        showFirebaseError("Couldn't connect to Firebase. Check the database configuration.", error);
+      }
+    }
+  </script>
+</body>
+</html>

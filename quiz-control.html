@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07131c">
-  <title>Sky Stations - Quiz Control</title>
+  <title>Sky Stations - PC Quiz Control</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
@@ -95,6 +95,14 @@
     }
 
     .open-overlay:hover { background: rgba(31, 74, 81, 0.52); }
+
+    .overlay-links {
+      display: flex;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
 
     .connection-card {
       display: flex;
@@ -281,7 +289,8 @@
 
     @media (max-width: 600px) {
       body { padding: 12px 10px 30px; }
-      .topbar { align-items: flex-start; padding: 16px; }
+      .topbar { align-items: flex-start; flex-direction: column; padding: 16px; }
+      .overlay-links { justify-content: flex-start; gap: 6px; }
       .open-overlay { padding: 9px 10px; font-size: 12px; }
       .card, .live-card { padding: 16px; }
       .field-grid, .answers-grid { grid-template-columns: 1fr; }
@@ -295,9 +304,13 @@
     <header class="topbar">
       <div>
         <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
-        <h1>Live Quiz Control</h1>
+        <h1>PC Quiz Control</h1>
       </div>
-      <a class="open-overlay" href="./quiz-overlay.html" target="_blank" rel="noopener">Open overlay</a>
+      <nav class="overlay-links" aria-label="Quiz overlays">
+        <a class="open-overlay" href="./quiz-control-mobile.html">Mobile control</a>
+        <a class="open-overlay" href="./quiz-overlay.html" target="_blank" rel="noopener">PC overlay</a>
+        <a class="open-overlay" href="./quiz-mobile-overlay.html" target="_blank" rel="noopener">Mobile overlay</a>
+      </nav>
     </header>
 
     <section class="connection-card" id="connection-card" aria-live="polite">
@@ -360,7 +373,7 @@
       </section>
 
       <section class="card">
-        <h2 class="section-heading"><span class="step">03</span>Text size</h2>
+        <h2 class="section-heading"><span class="step">03</span>Text size &amp; design</h2>
         <div class="field-grid">
           <label for="question-font-size">
             <span class="range-heading">
@@ -376,8 +389,19 @@
             </span>
             <input id="answer-font-size" type="range" min="18" max="80" step="1" value="44" disabled>
           </label>
+          <label class="full-width" for="overlay-theme">
+            <span>Overlay design</span>
+            <select id="overlay-theme" disabled>
+              <option value="flight-deck">Flight Deck — current design</option>
+              <option value="liquid-glass">Liquid Glass</option>
+              <option value="glassmorphism">Glassmorphism</option>
+              <option value="aurora">Aurora — custom design</option>
+              <option value="minimal-atc">Minimal ATC — custom design</option>
+            </select>
+          </label>
         </div>
         <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Questions go up to 50 px; answers go up to 80 px. Changes sync live.</p>
+        <p class="feedback" id="design-settings-feedback" role="status" aria-live="polite">Connect to Firebase to choose an overlay design.</p>
       </section>
 
       <section class="card">
@@ -452,7 +476,9 @@
     const questionFontSizeOutput = document.getElementById("question-font-size-output");
     const answerFontSizeSlider = document.getElementById("answer-font-size");
     const answerFontSizeOutput = document.getElementById("answer-font-size-output");
+    const overlayThemeSelect = document.getElementById("overlay-theme");
     const fontSettingsFeedback = document.getElementById("font-settings-feedback");
+    const designSettingsFeedback = document.getElementById("design-settings-feedback");
     const connectionCard = document.getElementById("connection-card");
     const connectionTitle = document.getElementById("connection-title");
     const connectionDetail = document.getElementById("connection-detail");
@@ -464,11 +490,13 @@
 
     let databaseRef = null;
     let fontSizeSettingsRef = null;
+    let designSettingsRef = null;
     let currentQuiz = null;
     let serverTimeOffset = 0;
     let serverClockReady = false;
     let connected = false;
     let timeoutUpdatePending = false;
+    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
 
     sampleQuestions.forEach(function (item, index) {
       const option = document.createElement("option");
@@ -561,6 +589,48 @@
       saveFontSizeSetting("answer", answerFontSizeSlider);
     });
 
+    function renderDesignTheme(snapshot) {
+      const theme = snapshot.exists() ? snapshot.val() : "flight-deck";
+      if (typeof theme !== "string" || !overlayThemes.includes(theme)) {
+        designSettingsFeedback.textContent = "Firebase returned an invalid overlay design.";
+        designSettingsFeedback.className = "feedback error";
+        console.error("Invalid Firebase quiz overlay design:", theme);
+        return;
+      }
+
+      overlayThemeSelect.value = theme;
+      designSettingsFeedback.textContent = "Overlay design is synced with the PC overlay.";
+      designSettingsFeedback.className = "feedback";
+    }
+
+    function saveDesignTheme() {
+      if (!connected || !designSettingsRef) {
+        designSettingsFeedback.textContent = "Not connected to Firebase. Reconnect before changing the design.";
+        designSettingsFeedback.className = "feedback error";
+        return;
+      }
+
+      const theme = overlayThemeSelect.value;
+      if (!overlayThemes.includes(theme)) {
+        designSettingsFeedback.textContent = "Choose a valid overlay design.";
+        designSettingsFeedback.className = "feedback error";
+        return;
+      }
+
+      designSettingsFeedback.textContent = "Updating the PC overlay design...";
+      designSettingsFeedback.className = "feedback";
+      designSettingsRef.set(theme).then(function () {
+        designSettingsFeedback.textContent = "PC overlay design updated.";
+        designSettingsFeedback.className = "feedback success";
+      }).catch(function (error) {
+        console.error("Could not update the PC overlay design:", error);
+        designSettingsFeedback.textContent = "Could not update Firebase: " + error.message;
+        designSettingsFeedback.className = "feedback error";
+      });
+    }
+
+    overlayThemeSelect.addEventListener("change", saveDesignTheme);
+
     function setFeedback(message, kind) {
       feedback.textContent = message;
       feedback.className = "feedback" + (kind ? " " + kind : "");
@@ -572,6 +642,7 @@
       revealButton.disabled = !connected || !currentQuiz || currentQuiz.status !== "active";
       questionFontSizeSlider.disabled = !connected;
       answerFontSizeSlider.disabled = !connected;
+      overlayThemeSelect.disabled = !connected;
     }
 
     function setConnectionState(isConnected, detail) {
@@ -741,6 +812,12 @@
         fontSizeSettingsRef.on("value", renderFontSizeSettings, function (error) {
           setFontSettingsFeedback("Could not read text sizes from Firebase: " + error.message, "error");
           console.error("Firebase text-size listener failed:", error);
+        });
+        designSettingsRef = database.ref("quizOverlaySettings/designTheme");
+        designSettingsRef.on("value", renderDesignTheme, function (error) {
+          designSettingsFeedback.textContent = "Could not read the overlay design: " + error.message;
+          designSettingsFeedback.className = "feedback error";
+          console.error("Firebase overlay-design listener failed:", error);
         });
       } catch (error) {
         showFirebaseError("Could not initialize Firebase.", error);

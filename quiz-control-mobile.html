@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07131c">
+  <title>Sky Stations - Mobile Quiz Control</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: #07131c;
+      color: #f1f7f8;
+      --panel: rgba(15, 31, 40, 0.96);
+      --line: rgba(147, 184, 193, 0.2);
+      --muted: #9db2b9;
+      --cyan: #66e4e6;
+      --amber: #ffad63;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 14px 12px 32px;
+      background:
+        radial-gradient(ellipse at 10% 0%, rgba(35, 91, 101, 0.22), transparent 38%),
+        radial-gradient(ellipse at 100% 35%, rgba(137, 76, 43, 0.14), transparent 34%),
+        #07131c;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .shell { width: min(760px, 100%); margin: 0 auto; }
+
+    .topbar, .connection-card, .card, .live-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: 0 18px 55px rgba(0, 0, 0, 0.18);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px;
+      border-top: 3px solid var(--cyan);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--cyan);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .signal {
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(102, 228, 230, 0.7);
+    }
+
+    h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 30px); }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 11px;
+      border: 1px solid rgba(102, 228, 230, 0.42);
+      border-radius: 6px;
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 750;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .nav-link:hover { background: rgba(31, 74, 81, 0.52); }
+
+    .connection-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      margin: 12px 0;
+      padding: 12px 14px;
+    }
+
+    .connection-dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 10px;
+      margin-top: 4px;
+      border-radius: 50%;
+      background: #ff8278;
+    }
+
+    .connection-card.connected .connection-dot {
+      background: #75e6ae;
+      box-shadow: 0 0 10px rgba(117, 230, 174, 0.55);
+    }
+
+    .connection-title { font-size: 14px; }
+
+    .connection-detail {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .card, .live-card { padding: 16px; }
+    .card + .card, .live-card { margin-top: 12px; }
+
+    .section-heading {
+      margin: 0 0 14px;
+      font-size: 16px;
+    }
+
+    .field-grid, .answers-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      min-width: 0;
+      gap: 6px;
+      color: #dce8ea;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    input, select, textarea {
+      width: 100%;
+      min-width: 0;
+      min-height: 46px;
+      padding: 10px 11px;
+      border: 1px solid rgba(147, 184, 193, 0.28);
+      border-radius: 6px;
+      outline: none;
+      background: #0a1a23;
+      color: #f1f7f8;
+      font-size: 16px;
+    }
+
+    textarea { min-height: 76px; resize: vertical; line-height: 1.4; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(102, 228, 230, 0.13);
+    }
+
+    input[type="range"] { min-height: 38px; padding: 4px 0; accent-color: var(--amber); }
+
+    .range-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .range-output { color: var(--cyan); font-weight: 800; }
+
+    .appearance-feedback {
+      min-height: 18px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .appearance-feedback.error { color: #ffaaa3; }
+    .appearance-feedback.success { color: #75e6ae; }
+
+    .theme-select {
+      min-height: 48px;
+      border-color: rgba(102, 228, 230, 0.38);
+      background: linear-gradient(135deg, #10232c, #0a1a23);
+      cursor: pointer;
+    }
+
+    .button-row { display: grid; gap: 9px; margin-top: 16px; }
+
+    .action-button {
+      min-height: 48px;
+      padding: 11px 14px;
+      border: 1px solid rgba(102, 228, 230, 0.46);
+      border-radius: 6px;
+      background: rgba(31, 74, 81, 0.5);
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .action-button.primary {
+      border-color: var(--amber);
+      background: #d87539;
+      color: #fff8f1;
+    }
+
+    .action-button.danger {
+      border-color: rgba(255, 130, 120, 0.52);
+      background: rgba(112, 42, 43, 0.28);
+      color: #ffaaa3;
+    }
+
+    .action-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .feedback, .live-summary {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .feedback.error { color: #ffaaa3; }
+    .feedback.success { color: #75e6ae; }
+    .live-summary { margin: 0; }
+
+    @media (max-width: 600px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .nav-links { justify-content: flex-start; }
+      .field-grid, .answers-grid { grid-template-columns: 1fr; }
+      .field-grid .full-width, .answers-grid .full-width { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
+        <h1>Mobile Quiz Control</h1>
+      </div>
+      <nav class="nav-links" aria-label="Quiz pages">
+        <a class="nav-link" href="./quiz-control.html">PC control</a>
+        <a class="nav-link" href="./quiz-mobile-overlay.html" target="_blank" rel="noopener">Mobile overlay</a>
+      </nav>
+    </header>
+
+    <section class="connection-card" id="connection-card" aria-live="polite">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <div>
+        <strong class="connection-title" id="connection-title">Connecting to Firebase...</strong>
+        <p class="connection-detail" id="connection-detail">The mobile overlay updates when you publish a question.</p>
+      </div>
+    </section>
+
+    <form id="quiz-form">
+      <section class="card">
+        <h2 class="section-heading">Question</h2>
+        <div class="field-grid">
+          <label class="full-width" for="question">Question text
+            <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>
+          </label>
+          <label for="question-number">Question number
+            <input id="question-number" type="number" min="1" max="999" value="1" required>
+          </label>
+          <label for="total-questions">Total questions
+            <input id="total-questions" type="number" min="1" max="999" value="1" required>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading">Answer options</h2>
+        <div class="answers-grid">
+          <label for="answer-0">Option 1
+            <input id="answer-0" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-1">Option 2
+            <input id="answer-1" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-2">Option 3
+            <input id="answer-2" type="text" maxlength="100" required>
+          </label>
+          <label for="answer-3">Option 4
+            <input id="answer-3" type="text" maxlength="100" required>
+          </label>
+          <label class="full-width" for="correct-answer">Correct answer
+            <select id="correct-answer">
+              <option value="0">Option 1</option>
+              <option value="1">Option 2</option>
+              <option value="2">Option 3</option>
+              <option value="3">Option 4</option>
+            </select>
+          </label>
+          <label class="full-width" for="explanation">Explanation (optional)
+            <textarea id="explanation" maxlength="240" placeholder="Shown when the answer is revealed"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading">Mobile overlay appearance</h2>
+        <div class="field-grid">
+          <label class="full-width" for="design-theme">Overlay design
+            <select class="theme-select" id="design-theme" disabled>
+              <option value="flight-deck">Flight Deck — current design</option>
+              <option value="liquid-glass">Liquid Glass</option>
+              <option value="glassmorphism">Glassmorphism</option>
+              <option value="aurora">Aurora — custom design</option>
+              <option value="minimal-atc">Minimal ATC — custom design</option>
+            </select>
+          </label>
+          <label for="vertical-position">
+            <span class="range-heading">
+              <span>Move overlay up or down</span>
+              <output class="range-output" id="vertical-position-output" for="vertical-position">Centered</output>
+            </span>
+            <input id="vertical-position" type="range" min="-25" max="25" step="1" value="0" disabled>
+          </label>
+          <label for="explanation-size">
+            <span class="range-heading">
+              <span>Explanation (optional) text size</span>
+              <output class="range-output" id="explanation-size-output" for="explanation-size">18 px</output>
+            </span>
+            <input id="explanation-size" type="range" min="18" max="48" step="1" value="18" disabled>
+          </label>
+        </div>
+        <p class="appearance-feedback" id="appearance-feedback" role="status" aria-live="polite">Connect to Firebase to adjust the mobile overlay.</p>
+      </section>
+
+      <section class="card">
+        <h2 class="section-heading">Timer and controls</h2>
+        <label for="duration">
+          <span class="range-heading">
+            <span>Answer time</span>
+            <output class="range-output" id="duration-output" for="duration">20 seconds</output>
+          </span>
+          <input id="duration" type="range" min="5" max="120" step="1" value="20">
+        </label>
+        <div class="button-row">
+          <button class="action-button primary" id="start-question" type="submit" disabled>Publish and start timer</button>
+          <button class="action-button" id="reveal-answer" type="button" disabled>Reveal answer</button>
+          <button class="action-button danger" id="clear-overlay" type="button" disabled>Clear overlay</button>
+        </div>
+        <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+      </section>
+    </form>
+
+    <section class="live-card">
+      <h2 class="section-heading">Live quiz status</h2>
+      <p class="live-summary" id="live-summary">Waiting for the Firebase connection.</p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("quiz-form");
+    const durationSlider = document.getElementById("duration");
+    const durationOutput = document.getElementById("duration-output");
+    const verticalPositionSlider = document.getElementById("vertical-position");
+    const verticalPositionOutput = document.getElementById("vertical-position-output");
+    const designThemeSelect = document.getElementById("design-theme");
+    const explanationSizeSlider = document.getElementById("explanation-size");
+    const explanationSizeOutput = document.getElementById("explanation-size-output");
+    const appearanceFeedback = document.getElementById("appearance-feedback");
+    const connectionCard = document.getElementById("connection-card");
+    const connectionTitle = document.getElementById("connection-title");
+    const connectionDetail = document.getElementById("connection-detail");
+    const liveSummary = document.getElementById("live-summary");
+    const feedback = document.getElementById("feedback");
+    const startButton = document.getElementById("start-question");
+    const revealButton = document.getElementById("reveal-answer");
+    const clearButton = document.getElementById("clear-overlay");
+    const mobileThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
+
+    let databaseRef = null;
+    let mobileSettingsRef = null;
+    let currentQuiz = null;
+    let serverTimeOffset = 0;
+    let serverClockReady = false;
+    let connected = false;
+    let timeoutUpdatePending = false;
+
+    durationSlider.addEventListener("input", function () {
+      durationOutput.textContent = durationSlider.value + " seconds";
+    });
+
+    function updateAppearanceOutputs() {
+      const offset = Number(verticalPositionSlider.value);
+      verticalPositionOutput.textContent = offset === 0
+        ? "Centered"
+        : Math.abs(offset) + "% " + (offset < 0 ? "up" : "down");
+      explanationSizeOutput.textContent = explanationSizeSlider.value + " px";
+    }
+
+    function setAppearanceFeedback(message, kind) {
+      appearanceFeedback.textContent = message;
+      appearanceFeedback.className = "appearance-feedback" + (kind ? " " + kind : "");
+    }
+
+    function renderMobileSettings(snapshot) {
+      const settings = snapshot.exists() ? snapshot.val() : {};
+      if (!settings || typeof settings !== "object") {
+        setAppearanceFeedback("Firebase returned invalid mobile overlay settings.", "error");
+        console.error("Invalid Firebase mobile overlay settings:", settings);
+        return;
+      }
+
+      const offset = Object.prototype.hasOwnProperty.call(settings, "verticalOffset")
+        ? settings.verticalOffset
+        : 0;
+      const explanationSize = Object.prototype.hasOwnProperty.call(settings, "explanationSize")
+        ? settings.explanationSize
+        : Object.prototype.hasOwnProperty.call(settings, "revealedSize")
+          ? settings.revealedSize
+          : 18;
+      const designTheme = Object.prototype.hasOwnProperty.call(settings, "designTheme")
+        ? settings.designTheme
+        : "flight-deck";
+      if (!Number.isInteger(offset) || offset < -25 || offset > 25 ||
+          !Number.isInteger(explanationSize) || explanationSize < 18 || explanationSize > 48 ||
+          !mobileThemes.includes(designTheme)) {
+        setAppearanceFeedback("Firebase returned invalid or out-of-range mobile overlay settings.", "error");
+        console.error("Out-of-range Firebase mobile overlay settings:", settings);
+        return;
+      }
+
+      verticalPositionSlider.value = String(offset);
+      explanationSizeSlider.value = String(explanationSize);
+      designThemeSelect.value = designTheme;
+      updateAppearanceOutputs();
+      setAppearanceFeedback("Changes sync live with the mobile overlay.");
+    }
+
+    function saveMobileSetting(key, control) {
+      if (!connected || !mobileSettingsRef) {
+        setAppearanceFeedback("Not connected to Firebase. Reconnect before changing the overlay.", "error");
+        return;
+      }
+
+      const value = control.type === "range" ? Number(control.value) : control.value;
+      setAppearanceFeedback("Updating the mobile overlay...");
+      mobileSettingsRef.update({ [key]: value }).then(function () {
+        setAppearanceFeedback("Mobile overlay updated.", "success");
+      }).catch(function (error) {
+        console.error("Could not update mobile overlay settings:", error);
+        setAppearanceFeedback("Could not update Firebase: " + error.message, "error");
+      });
+    }
+
+    verticalPositionSlider.addEventListener("input", updateAppearanceOutputs);
+    explanationSizeSlider.addEventListener("input", updateAppearanceOutputs);
+    verticalPositionSlider.addEventListener("change", function () {
+      saveMobileSetting("verticalOffset", verticalPositionSlider);
+    });
+    explanationSizeSlider.addEventListener("change", function () {
+      saveMobileSetting("explanationSize", explanationSizeSlider);
+    });
+    designThemeSelect.addEventListener("change", function () {
+      saveMobileSetting("designTheme", designThemeSelect);
+    });
+
+    function setFeedback(message, kind) {
+      feedback.textContent = message;
+      feedback.className = "feedback" + (kind ? " " + kind : "");
+    }
+
+    function updateButtons() {
+      startButton.disabled = !connected || !serverClockReady;
+      revealButton.disabled = !connected || !currentQuiz || currentQuiz.status !== "active";
+      clearButton.disabled = !connected;
+    }
+
+    function setConnectionState(isConnected) {
+      connected = isConnected;
+      connectionCard.classList.toggle("connected", connected);
+      connectionTitle.textContent = connected ? "Connected to Firebase" : "Firebase disconnected";
+      connectionDetail.textContent = connected
+        ? (serverClockReady
+          ? "Ready. The mobile overlay receives live updates from this control."
+          : "Connected. Syncing the timer clock...")
+        : "Reconnecting... Check your internet connection and Firebase permissions.";
+      verticalPositionSlider.disabled = !connected;
+      explanationSizeSlider.disabled = !connected;
+      designThemeSelect.disabled = !connected;
+      updateButtons();
+    }
+
+    function renderLiveState(state) {
+      currentQuiz = state;
+      timeoutUpdatePending = false;
+      if (!state || state.status === "idle") {
+        liveSummary.textContent = "No question is live. Publish a question to start.";
+      } else if (state.status === "active") {
+        liveSummary.textContent = "Question " + (state.questionNumber || "") + " is live. The timer is running.";
+      } else if (state.status === "revealed") {
+        liveSummary.textContent = "The answer is revealed. Publish the next question when ready.";
+      } else if (state.status === "complete") {
+        liveSummary.textContent = "The quiz is complete.";
+      } else {
+        liveSummary.textContent = "Firebase returned an unrecognized quiz state.";
+      }
+      updateButtons();
+    }
+
+    function serverNow() {
+      return Date.now() + serverTimeOffset;
+    }
+
+    function revealCurrentAnswer(timedOut) {
+      if (!databaseRef || !currentQuiz || currentQuiz.status !== "active" || timeoutUpdatePending) return;
+      timeoutUpdatePending = true;
+      databaseRef.update({
+        status: "revealed",
+        revealedAt: serverNow()
+      }).then(function () {
+        setFeedback(timedOut ? "Time is up. The answer was revealed." : "The correct answer was revealed.", "success");
+      }).catch(function (error) {
+        timeoutUpdatePending = false;
+        console.error("Could not reveal the quiz answer:", error);
+        setFeedback("Could not update Firebase: " + error.message, "error");
+      });
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!connected || !serverClockReady || !databaseRef) {
+        setFeedback("Not connected to Firebase. Reconnect before publishing.", "error");
+        return;
+      }
+
+      const question = document.getElementById("question").value.trim();
+      const answers = [0, 1, 2, 3].map(function (index) {
+        return document.getElementById("answer-" + index).value.trim();
+      });
+      const questionNumber = Number(document.getElementById("question-number").value);
+      const totalQuestions = Number(document.getElementById("total-questions").value);
+      const durationSeconds = Number(durationSlider.value);
+      const correctIndex = Number(document.getElementById("correct-answer").value);
+
+      if (!question || answers.some(function (answer) { return !answer; })) {
+        setFeedback("Enter a question and all four answer options.", "error");
+        return;
+      }
+      if (!Number.isInteger(questionNumber) || questionNumber < 1 ||
+          !Number.isInteger(totalQuestions) || totalQuestions < questionNumber) {
+        setFeedback("Question numbers must be positive, and total questions cannot be less than the current question.", "error");
+        return;
+      }
+
+      const startedAt = serverNow();
+      const state = {
+        status: "active",
+        question: question,
+        answers: answers,
+        correctIndex: correctIndex,
+        explanation: document.getElementById("explanation").value.trim(),
+        questionNumber: questionNumber,
+        totalQuestions: totalQuestions,
+        durationSeconds: durationSeconds,
+        startedAt: startedAt,
+        endsAt: startedAt + durationSeconds * 1000,
+        updatedAt: startedAt
+      };
+
+      startButton.disabled = true;
+      databaseRef.set(state).then(function () {
+        setFeedback("Question published. The mobile overlay timer has started.", "success");
+      }).catch(function (error) {
+        console.error("Could not publish the mobile quiz question:", error);
+        setFeedback("Could not publish to Firebase: " + error.message, "error");
+      }).finally(updateButtons);
+    });
+
+    revealButton.addEventListener("click", function () {
+      if (!currentQuiz || currentQuiz.status !== "active") return;
+      revealCurrentAnswer(false);
+    });
+
+    clearButton.addEventListener("click", function () {
+      if (!connected || !databaseRef) {
+        setFeedback("Not connected to Firebase. Reconnect before clearing the overlay.", "error");
+        return;
+      }
+      clearButton.disabled = true;
+      databaseRef.set({ status: "idle", updatedAt: serverNow() }).then(function () {
+        setFeedback("The mobile overlay has been cleared.", "success");
+      }).catch(function (error) {
+        console.error("Could not clear the mobile quiz state:", error);
+        setFeedback("Could not clear Firebase quiz state: " + error.message, "error");
+      }).finally(updateButtons);
+    });
+
+    window.setInterval(function () {
+      if (!currentQuiz || currentQuiz.status !== "active" || timeoutUpdatePending) return;
+      if (Number(currentQuiz.endsAt) <= serverNow()) revealCurrentAnswer(true);
+    }, 250);
+
+    function showFirebaseError(message, error) {
+      const detail = error && error.message
+        ? error.message
+        : "Check the Firebase database configuration and permissions.";
+      setConnectionState(false);
+      connectionTitle.textContent = message;
+      connectionDetail.textContent = detail;
+      liveSummary.textContent = "The mobile quiz control is unavailable until Firebase connects.";
+      setFeedback(message + (error && error.message ? " " + error.message : ""), "error");
+      if (error) console.error(message, error);
+    }
+
+    if (typeof firebase === "undefined") {
+      showFirebaseError("Firebase SDK failed to load.");
+    } else {
+      try {
+        firebase.initializeApp({
+          databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
+        });
+        const database = firebase.database();
+        database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
+          const value = snapshot.val();
+          const offset = Number(value);
+          serverClockReady = typeof value === "number" && Number.isFinite(offset);
+          if (serverClockReady) serverTimeOffset = offset;
+          updateButtons();
+          if (connected) setConnectionState(true);
+        }, function (error) {
+          console.error("Firebase server clock unavailable:", error);
+        });
+        database.ref(".info/connected").on("value", function (snapshot) {
+          setConnectionState(snapshot.val() === true);
+        }, function (error) {
+          showFirebaseError("Could not check the Firebase connection.", error);
+        });
+        databaseRef = database.ref("quizOverlayState");
+        databaseRef.on("value", function (snapshot) {
+          renderLiveState(snapshot.val());
+        }, function (error) {
+          showFirebaseError("Could not read the Firebase quiz state.", error);
+        });
+        mobileSettingsRef = database.ref("quizOverlaySettings/mobile");
+        mobileSettingsRef.on("value", renderMobileSettings, function (error) {
+          setAppearanceFeedback("Could not read mobile overlay settings: " + error.message, "error");
+          console.error("Firebase mobile settings listener failed:", error);
+        });
+      } catch (error) {
+        showFirebaseError("Could not initialize Firebase.", error);
+      }
+    }
+  </script>
+</body>
+</html>
