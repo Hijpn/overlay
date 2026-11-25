@@ -1,6 +1,6 @@
 .quiz-ticket[data-theme="lime"], .quiz-card[data-theme="lime"] {
-  --accent: #89f336;
-  --accent-soft: rgba(137, 243, 54, 0.3);
+  --accent: #85eb34;
+  --accent-soft: rgba(133, 235, 52, 0.3);
 }
 .quiz-ticket[data-theme="cockpit-green"], .quiz-card[data-theme="cockpit-green"] {
   --accent: #55d69a;
@@ -31,6 +31,9 @@
   border-color: #89f336;
   background: #89f336;
   color: #10220a;
+}
+.quiz-ticket[data-theme="lime"] .answer.correct, .quiz-card[data-theme="lime"] .answer.correct {
+  border-color: var(--accent);
 }
 .quiz-ticket[data-theme="lime"] .timer-fill, .quiz-ticket[data-theme="cockpit-green"] .timer-fill, .quiz-ticket[data-theme="orange"] .timer-fill,
 .quiz-card[data-theme="lime"] .timer-fill, .quiz-card[data-theme="cockpit-green"] .timer-fill, .quiz-card[data-theme="orange"] .timer-fill {
