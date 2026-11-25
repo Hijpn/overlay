@@ -421,6 +421,20 @@
             </span>
             <input id="answer-font-size" type="range" min="18" max="80" step="1" value="44" disabled>
           </label>
+          <label for="answer-number-font-size">
+            <span class="range-heading">
+              <span>Answer numbers (PC overlay)</span>
+              <output class="range-output" id="answer-number-font-size-output" for="answer-number-font-size">13 px</output>
+            </span>
+            <input id="answer-number-font-size" type="range" min="13" max="48" step="1" value="13" disabled>
+          </label>
+          <label for="explanation-font-size">
+            <span class="range-heading">
+              <span>Explanation (PC overlay)</span>
+              <output class="range-output" id="explanation-font-size-output" for="explanation-font-size">14 px</output>
+            </span>
+            <input id="explanation-font-size" type="range" min="14" max="48" step="1" value="14" disabled>
+          </label>
           <label class="full-width" for="overlay-theme">
             <span>Overlay design</span>
             <select id="overlay-theme" disabled>
@@ -435,7 +449,7 @@
             </select>
           </label>
         </div>
-        <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Questions go up to 50 px; answers go up to 80 px. Changes sync live.</p>
+        <p class="feedback" id="font-settings-feedback" role="status" aria-live="polite">Text sizes sync live with the overlay.</p>
         <p class="feedback" id="design-settings-feedback" role="status" aria-live="polite">Connect to Firebase to choose an overlay design.</p>
       </section>
 
@@ -471,6 +485,10 @@
     const questionFontSizeOutput = document.getElementById("question-font-size-output");
     const answerFontSizeSlider = document.getElementById("answer-font-size");
     const answerFontSizeOutput = document.getElementById("answer-font-size-output");
+    const answerNumberFontSizeSlider = document.getElementById("answer-number-font-size");
+    const answerNumberFontSizeOutput = document.getElementById("answer-number-font-size-output");
+    const explanationFontSizeSlider = document.getElementById("explanation-font-size");
+    const explanationFontSizeOutput = document.getElementById("explanation-font-size-output");
     const overlayThemeSelect = document.getElementById("overlay-theme");
     const fontSettingsFeedback = document.getElementById("font-settings-feedback");
     const designSettingsFeedback = document.getElementById("design-settings-feedback");
@@ -501,6 +519,8 @@
     function updateFontSizeOutputs() {
       questionFontSizeOutput.textContent = questionFontSizeSlider.value + " px";
       answerFontSizeOutput.textContent = answerFontSizeSlider.value + " px";
+      answerNumberFontSizeOutput.textContent = answerNumberFontSizeSlider.value + " px";
+      explanationFontSizeOutput.textContent = explanationFontSizeSlider.value + " px";
     }
 
     function setFontSettingsFeedback(message, kind) {
@@ -509,8 +529,12 @@
     }
 
     function renderFontSizeSettings(snapshot) {
-      if (!snapshot.exists()) return;
-      const sizes = snapshot.val();
+      const sizes = snapshot.exists() ? snapshot.val() : {};
+      if (!sizes || typeof sizes !== "object") {
+        setFontSettingsFeedback("Firebase returned invalid text sizes.", "error");
+        console.error("Invalid Firebase quiz text sizes:", sizes);
+        return;
+      }
 
       if (Object.prototype.hasOwnProperty.call(sizes, "question")) {
         if (!Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 50) {
@@ -530,6 +554,16 @@
         answerFontSizeSlider.value = String(sizes.answer);
       }
 
+      const answerNumber = Object.prototype.hasOwnProperty.call(sizes, "answerNumber") ? sizes.answerNumber : 13;
+      const explanation = Object.prototype.hasOwnProperty.call(sizes, "explanation") ? sizes.explanation : 14;
+      if (!Number.isInteger(answerNumber) || answerNumber < 13 || answerNumber > 48 ||
+          !Number.isInteger(explanation) || explanation < 14 || explanation > 48) {
+        setFontSettingsFeedback("Firebase returned invalid answer number or explanation sizes.", "error");
+        console.error("Invalid Firebase quiz text sizes:", sizes);
+        return;
+      }
+      answerNumberFontSizeSlider.value = String(answerNumber);
+      explanationFontSizeSlider.value = String(explanation);
       updateFontSizeOutputs();
       setFontSettingsFeedback("Text sizes are synced with the overlay.");
     }
@@ -552,11 +586,19 @@
 
     questionFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
     answerFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
+    answerNumberFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
+    explanationFontSizeSlider.addEventListener("input", updateFontSizeOutputs);
     questionFontSizeSlider.addEventListener("change", function () {
       saveFontSizeSetting("question", questionFontSizeSlider);
     });
     answerFontSizeSlider.addEventListener("change", function () {
       saveFontSizeSetting("answer", answerFontSizeSlider);
+    });
+    answerNumberFontSizeSlider.addEventListener("change", function () {
+      saveFontSizeSetting("answerNumber", answerNumberFontSizeSlider);
+    });
+    explanationFontSizeSlider.addEventListener("change", function () {
+      saveFontSizeSetting("explanation", explanationFontSizeSlider);
     });
 
     function renderDesignTheme(snapshot) {
@@ -612,6 +654,8 @@
       revealButton.disabled = !connected || !currentQuiz || currentQuiz.status !== "active";
       questionFontSizeSlider.disabled = !connected;
       answerFontSizeSlider.disabled = !connected;
+      answerNumberFontSizeSlider.disabled = !connected;
+      explanationFontSizeSlider.disabled = !connected;
       overlayThemeSelect.disabled = !connected;
       quizLibrary.setConnected(connected);
     }

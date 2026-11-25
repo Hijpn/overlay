@@ -21,12 +21,8 @@
       --line: rgba(126, 207, 213, 0.28);
       --question-size: 40px;
       --answer-size: 44px;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      --answer-number-size: 13px;
+      --explanation-size: 14px;
     }
 
     * {
@@ -53,120 +49,6 @@
       isolation: isolate;
     }
 
-    .settings-panel {
-      position: fixed;
-      z-index: 5;
-      top: 24px;
-      left: 50%;
-      width: min(460px, calc(100vw - 32px));
-      padding: 20px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(5, 15, 23, 0.98);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
-      transform: translateX(-50%);
-    }
-
-    .settings-panel[hidden] {
-      display: none;
-    }
-
-    .settings-header,
-    .settings-actions,
-    .setting-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .settings-header {
-      margin-bottom: 18px;
-    }
-
-    .settings-title {
-      margin: 0;
-      color: var(--ink);
-      font-size: 22px;
-    }
-
-    .settings-hint,
-    .settings-status {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .text-setting {
-      margin-top: 16px;
-    }
-
-    .setting-label {
-      margin-bottom: 8px;
-      color: var(--ink);
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .setting-value {
-      color: var(--amber);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .text-setting input {
-      width: 100%;
-      accent-color: var(--cyan);
-      cursor: pointer;
-    }
-
-    .settings-actions {
-      justify-content: flex-end;
-      margin-top: 16px;
-    }
-
-    .settings-button {
-      min-height: 38px;
-      padding: 8px 12px;
-      border: 1px solid rgba(102, 228, 230, 0.42);
-      border-radius: 4px;
-      background: rgba(31, 74, 81, 0.42);
-      color: var(--cyan);
-      font: inherit;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .settings-button:hover {
-      background: rgba(31, 74, 81, 0.78);
-    }
-
-    .settings-toggle {
-      display: grid;
-      width: 42px;
-      height: 34px;
-      place-items: center;
-      border: 1px solid rgba(102, 228, 230, 0.42);
-      border-radius: 4px;
-      background: rgba(31, 74, 81, 0.42);
-      color: var(--cyan);
-      font: inherit;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .settings-toggle:hover {
-      background: rgba(31, 74, 81, 0.78);
-    }
-
-    .settings-button:focus-visible,
-    .settings-toggle:focus-visible,
-    .text-setting input:focus-visible {
-      outline: 2px solid var(--amber);
-      outline-offset: 3px;
-    }
-
     .quiz-ticket {
       position: absolute;
       right: 4%;
@@ -177,7 +59,7 @@
       min-height: min(460px, 64vh);
       max-height: 94vh;
       grid-template-columns: minmax(0, 1fr) 250px;
-      overflow: hidden;
+      overflow-y: auto;
       border: 1px solid var(--line);
       border-left: 3px solid var(--cyan);
       border-right: 3px solid var(--orange);
@@ -192,13 +74,12 @@
     .ticket-main {
       display: grid;
       min-width: 0;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(min-content, 1fr) auto;
       gap: 12px;
       padding: 22px 28px 18px;
     }
 
     .quiz-header,
-    .header-controls,
     .brand,
     .ticket-footer {
       display: flex;
@@ -259,7 +140,9 @@
       font-weight: 650;
       line-height: 1.22;
       letter-spacing: -0.025em;
-      text-wrap: balance;
+      text-align: left;
+      text-wrap: wrap;
+      overflow-wrap: anywhere;
     }
 
     .answers {
@@ -294,14 +177,14 @@
 
     .answer-key {
       display: grid;
-      width: 27px;
-      height: 27px;
-      flex: 0 0 27px;
+      width: max(27px, calc(var(--answer-number-size) + 14px));
+      height: max(27px, calc(var(--answer-number-size) + 14px));
+      flex: 0 0 max(27px, calc(var(--answer-number-size) + 14px));
       place-items: center;
       border: 1px solid rgba(102, 228, 230, 0.34);
       border-radius: 3px;
       color: var(--cyan);
-      font-size: 13px;
+      font-size: var(--answer-number-size);
       font-weight: 700;
     }
 
@@ -333,8 +216,9 @@
       min-height: 18px;
       margin: 0;
       color: var(--muted);
-      font-size: 14px;
+      font-size: var(--explanation-size);
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .ticket-footer {
@@ -694,10 +578,6 @@
         gap: 8px;
       }
 
-      .header-controls {
-        gap: 0;
-      }
-
       .quiz-kind {
         display: none;
       }
@@ -726,14 +606,9 @@
       }
 
       .answer-key {
-        width: 28px;
-        height: 28px;
-        flex-basis: 28px;
-        font-size: 14px;
-      }
-
-      .feedback {
-        font-size: 14px;
+        width: max(28px, calc(var(--answer-number-size) + 14px));
+        height: max(28px, calc(var(--answer-number-size) + 14px));
+        flex-basis: max(28px, calc(var(--answer-number-size) + 14px));
       }
 
       .ticket-footer {
@@ -797,21 +672,12 @@
       }
 
       .answer-key {
-        width: 24px;
-        height: 24px;
-        flex-basis: 24px;
-      }
-
-      .feedback {
-        font-size: 12px;
+        width: max(24px, calc(var(--answer-number-size) + 14px));
+        height: max(24px, calc(var(--answer-number-size) + 14px));
+        flex-basis: max(24px, calc(var(--answer-number-size) + 14px));
       }
 
       .ticket-footer {
-        display: none;
-      }
-
-      .quiz-kind,
-      .feedback {
         display: none;
       }
 
@@ -839,56 +705,16 @@
         font-size: 11px;
       }
 
-      .settings-panel {
-        top: 12px;
-        max-height: calc(100vh - 24px);
-        overflow-y: auto;
-        padding: 16px;
-      }
     }
   </style>
 </head>
 <body>
   <main class="overlay" aria-label="Aviation quiz overlay">
-    <section class="settings-panel" id="settings-panel" role="dialog" aria-labelledby="settings-title" hidden>
-      <header class="settings-header">
-        <div>
-          <h2 class="settings-title" id="settings-title">Text size</h2>
-          <p class="settings-hint">Changes apply instantly. Press Esc or Done to close.</p>
-        </div>
-        <button class="settings-button" id="close-settings" type="button">Done</button>
-      </header>
-
-      <div class="text-setting">
-        <label class="setting-label" for="question-size">
-          <span>Question</span>
-          <output class="setting-value" id="question-size-value" for="question-size">40 px</output>
-        </label>
-          <input id="question-size" type="range" min="28" max="50" step="1" value="40">
-      </div>
-
-      <div class="text-setting">
-        <label class="setting-label" for="answer-size">
-          <span>Answer options</span>
-          <output class="setting-value" id="answer-size-value" for="answer-size">44 px</output>
-        </label>
-        <input id="answer-size" type="range" min="18" max="80" step="1" value="44">
-      </div>
-
-      <div class="settings-actions">
-        <span class="settings-status" id="settings-status" role="status">Settings save automatically.</span>
-        <button class="settings-button" id="reset-settings" type="button">Reset</button>
-      </div>
-    </section>
-
     <article class="quiz-ticket" id="quiz-ticket" data-theme="flight-deck">
       <section class="ticket-main" aria-live="polite">
         <header class="quiz-header">
           <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
-          <div class="header-controls">
-            <span class="quiz-kind">Aviation quiz / boarding pass</span>
-            <button class="settings-toggle" id="settings-toggle" type="button" aria-label="Open text size settings" aria-haspopup="dialog" aria-controls="settings-panel" aria-expanded="false">Aa</button>
-          </div>
+          <span class="quiz-kind">Aviation quiz / boarding pass</span>
         </header>
 
         <div class="question-area">
@@ -927,145 +753,43 @@
     const timerValue = document.getElementById("timer-value");
     const timerTrack = document.getElementById("timer-track");
     const quizStatus = document.getElementById("quiz-status");
-    const settingsPanel = document.getElementById("settings-panel");
-    const settingsToggle = document.getElementById("settings-toggle");
-    const questionSizeSlider = document.getElementById("question-size");
-    const answerSizeSlider = document.getElementById("answer-size");
-    const questionSizeValue = document.getElementById("question-size-value");
-    const answerSizeValue = document.getElementById("answer-size-value");
-    const settingsStatus = document.getElementById("settings-status");
-    const defaultTextSizes = { question: 40, answer: 44 };
     const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
-    const textSettingsKey = "sky-stations-quiz-text-sizes";
 
     let timerId = 0;
     let currentQuiz = null;
     let serverTimeOffset = 0;
 
-    function loadTextSizes() {
-      let saved;
-      try {
-        saved = window.localStorage.getItem(textSettingsKey);
-      } catch (error) {
-        settingsStatus.textContent = "Saved text sizes are unavailable. Defaults are active.";
-        return defaultTextSizes;
-      }
-
-      if (!saved) return defaultTextSizes;
-
-      let sizes;
-      try {
-        sizes = JSON.parse(saved);
-      } catch (error) {
-        if (error instanceof SyntaxError) {
-          settingsStatus.textContent = "Saved text sizes are invalid. Defaults are active.";
-          return defaultTextSizes;
-        }
-        throw error;
-      }
-
-      if (!sizes || !Number.isInteger(sizes.question) || sizes.question < 28 || sizes.question > 50 ||
-          !Number.isInteger(sizes.answer) || sizes.answer < 18 || sizes.answer > 80) {
-        settingsStatus.textContent = "Saved text sizes are invalid. Defaults are active.";
-        return defaultTextSizes;
-      }
-
-      return sizes;
-    }
-
-    function applyTextSizes(save) {
-      const questionSize = Number(questionSizeSlider.value);
-      const answerSize = Number(answerSizeSlider.value);
-      document.documentElement.style.setProperty("--question-size", questionSize + "px");
-      document.documentElement.style.setProperty("--answer-size", answerSize + "px");
-      questionSizeValue.textContent = questionSize + " px";
-      answerSizeValue.textContent = answerSize + " px";
-
-      if (!save) return;
-
-      try {
-        window.localStorage.setItem(textSettingsKey, JSON.stringify({
-          question: questionSize,
-          answer: answerSize
-        }));
-        settingsStatus.textContent = "Settings saved automatically.";
-      } catch (error) {
-        settingsStatus.textContent = "Changes apply now but could not be saved.";
-      }
-    }
-
     function applyRemoteTextSizes(snapshot) {
-      if (!snapshot.exists()) return;
-      const sizes = snapshot.val();
-      let updated = false;
+      const sizes = snapshot.exists() ? snapshot.val() : {};
+      if (!sizes || typeof sizes !== "object") {
+        console.error("Firebase returned invalid quiz text sizes:", sizes);
+        return;
+      }
 
-      if (Object.prototype.hasOwnProperty.call(sizes, "question")) {
-        if (Number.isInteger(sizes.question) && sizes.question >= 28 && sizes.question <= 50) {
-          questionSizeSlider.value = String(sizes.question);
-          updated = true;
-        } else {
-          settingsStatus.textContent = "The control panel sent an invalid question size.";
+      [
+        ["question", "--question-size", 28, 50, 40],
+        ["answer", "--answer-size", 18, 80, 44],
+        ["answerNumber", "--answer-number-size", 13, 48, 13],
+        ["explanation", "--explanation-size", 14, 48, 14]
+      ].forEach(function (setting) {
+        const value = Object.prototype.hasOwnProperty.call(sizes, setting[0]) ? sizes[setting[0]] : setting[4];
+        if (!Number.isInteger(value) || value < setting[2] || value > setting[3]) {
+          console.error("Invalid Firebase quiz text size:", setting[0], value);
           return;
         }
-      }
-
-      if (Object.prototype.hasOwnProperty.call(sizes, "answer")) {
-        if (Number.isInteger(sizes.answer) && sizes.answer >= 18 && sizes.answer <= 80) {
-          answerSizeSlider.value = String(sizes.answer);
-          updated = true;
-        } else {
-          settingsStatus.textContent = "The control panel sent an invalid answer size.";
-          return;
-        }
-      }
-
-      if (updated) {
-        applyTextSizes(false);
-        settingsStatus.textContent = "Text sizes synced from Quiz Control.";
-      }
+        document.documentElement.style.setProperty(setting[1], value + "px");
+      });
     }
 
     function applyRemoteDesignTheme(snapshot) {
       const theme = snapshot.exists() ? snapshot.val() : "flight-deck";
       if (typeof theme !== "string" || !overlayThemes.includes(theme)) {
-        settingsStatus.textContent = "The control panel sent an invalid overlay design.";
         console.error("Invalid Firebase quiz overlay design:", theme);
         return;
       }
 
       quizTicket.dataset.theme = theme;
-      settingsStatus.textContent = "Design synced from Quiz Control.";
     }
-
-    const savedTextSizes = loadTextSizes();
-    questionSizeSlider.value = String(savedTextSizes.question);
-    answerSizeSlider.value = String(savedTextSizes.answer);
-    applyTextSizes(false);
-
-    questionSizeSlider.addEventListener("input", function () {
-      applyTextSizes(true);
-    });
-    answerSizeSlider.addEventListener("input", function () {
-      applyTextSizes(true);
-    });
-    function setSettingsOpen(open) {
-      settingsPanel.hidden = !open;
-      settingsToggle.setAttribute("aria-expanded", String(open));
-      if (open) questionSizeSlider.focus();
-      else settingsToggle.focus();
-    }
-
-    settingsToggle.addEventListener("click", function () {
-      setSettingsOpen(true);
-    });
-    document.getElementById("reset-settings").addEventListener("click", function () {
-      questionSizeSlider.value = String(defaultTextSizes.question);
-      answerSizeSlider.value = String(defaultTextSizes.answer);
-      applyTextSizes(true);
-    });
-    document.getElementById("close-settings").addEventListener("click", function () {
-      setSettingsOpen(false);
-    });
 
     function updateTimer(secondsLeft, durationSeconds) {
       const progress = durationSeconds > 0
@@ -1221,11 +945,9 @@
           showFirebaseError("Couldn't read the live quiz. Check Firebase database permissions.", error);
         });
         database.ref("quizOverlaySettings/fontSizes").on("value", applyRemoteTextSizes, function (error) {
-          settingsStatus.textContent = "Couldn't sync text sizes from Quiz Control.";
           console.error("Firebase text-size listener failed:", error);
         });
         database.ref("quizOverlaySettings/designTheme").on("value", applyRemoteDesignTheme, function (error) {
-          settingsStatus.textContent = "Couldn't sync the overlay design from Quiz Control.";
           console.error("Firebase overlay-design listener failed:", error);
         });
       } catch (error) {
@@ -1233,14 +955,6 @@
       }
     }
 
-    window.addEventListener("keydown", function (event) {
-      if (event.key === "F2") {
-        event.preventDefault();
-        setSettingsOpen(settingsPanel.hidden);
-      } else if (!settingsPanel.hidden && event.key === "Escape") {
-        setSettingsOpen(false);
-      }
-    });
   </script>
 </body>
 </html>
