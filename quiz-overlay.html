@@ -7,6 +7,7 @@
   <title>Sky Stations - Quiz Overlay</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="quiz-colors.css">
   <style>
     :root {
       color-scheme: dark;
@@ -934,7 +935,7 @@
     const answerSizeValue = document.getElementById("answer-size-value");
     const settingsStatus = document.getElementById("settings-status");
     const defaultTextSizes = { question: 40, answer: 44 };
-    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
+    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
     const textSettingsKey = "sky-stations-quiz-text-sizes";
 
     let timerId = 0;

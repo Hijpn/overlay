@@ -1,0 +1,41 @@
+.quiz-ticket[data-theme="lime"], .quiz-card[data-theme="lime"] {
+  --accent: #89f336;
+  --accent-soft: rgba(137, 243, 54, 0.3);
+}
+.quiz-ticket[data-theme="cockpit-green"], .quiz-card[data-theme="cockpit-green"] {
+  --accent: #55d69a;
+  --accent-soft: rgba(85, 214, 154, 0.3);
+}
+.quiz-ticket[data-theme="orange"], .quiz-card[data-theme="orange"] {
+  --accent: #ff923d;
+  --accent-soft: rgba(255, 146, 61, 0.3);
+}
+.quiz-ticket[data-theme="lime"], .quiz-ticket[data-theme="cockpit-green"], .quiz-ticket[data-theme="orange"],
+.quiz-card[data-theme="lime"], .quiz-card[data-theme="cockpit-green"], .quiz-card[data-theme="orange"] {
+  --cyan: var(--accent);
+  --amber: var(--accent);
+  --orange: var(--accent);
+  --green: #89f336;
+  --line: var(--accent-soft);
+  border: 2px solid var(--accent);
+  background: linear-gradient(145deg, #102522, #07151b 70%);
+  box-shadow: 0 0 28px var(--accent-soft), 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+.quiz-ticket[data-theme="lime"] .answer, .quiz-ticket[data-theme="cockpit-green"] .answer, .quiz-ticket[data-theme="orange"] .answer,
+.quiz-card[data-theme="lime"] .answer, .quiz-card[data-theme="cockpit-green"] .answer, .quiz-card[data-theme="orange"] .answer {
+  border-color: var(--accent);
+  background: rgba(15, 36, 36, 0.92);
+}
+.quiz-ticket[data-theme="lime"] .answer.correct, .quiz-ticket[data-theme="cockpit-green"] .answer.correct, .quiz-ticket[data-theme="orange"] .answer.correct,
+.quiz-card[data-theme="lime"] .answer.correct, .quiz-card[data-theme="cockpit-green"] .answer.correct, .quiz-card[data-theme="orange"] .answer.correct {
+  border-color: #89f336;
+  background: #89f336;
+  color: #10220a;
+}
+.quiz-ticket[data-theme="lime"] .timer-fill, .quiz-ticket[data-theme="cockpit-green"] .timer-fill, .quiz-ticket[data-theme="orange"] .timer-fill,
+.quiz-card[data-theme="lime"] .timer-fill, .quiz-card[data-theme="cockpit-green"] .timer-fill, .quiz-card[data-theme="orange"] .timer-fill {
+  background: var(--accent);
+}
+.quiz-card[data-theme="lime"] .question, .quiz-card[data-theme="cockpit-green"] .question, .quiz-card[data-theme="orange"] .question {
+  border-color: var(--accent);
+}

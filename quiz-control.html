@@ -7,6 +7,7 @@
   <title>Sky Stations - PC Quiz Control</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="quiz-library.js"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -325,12 +326,24 @@
       <section class="card">
         <h2 class="section-heading"><span class="step">01</span>Question</h2>
         <div class="field-grid">
-          <label class="full-width" for="sample-question">
-            Load a sample question
-            <select id="sample-question">
-              <option value="">Custom question</option>
+          <label class="full-width" for="saved-question">
+            Saved questions
+            <select id="saved-question" disabled>
+              <option value="">New question</option>
             </select>
           </label>
+          <div class="full-width">
+            <div class="button-row">
+              <button class="action-button" id="new-question" type="button">New question</button>
+              <button class="action-button" id="save-question" type="button" disabled>Save question</button>
+              <button class="action-button danger" id="delete-question" type="button" disabled>Delete selected question</button>
+            </div>
+            <p class="feedback" id="library-feedback" role="status" aria-live="polite">Connect to Firebase to manage saved questions.</p>
+            <label for="csv-file">Import questions from CSV (Google Sheets: File → Download → CSV)
+              <input id="csv-file" type="file" accept=".csv,text/csv" disabled>
+            </label>
+            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional). Import adds questions without replacing existing ones.</p>
+          </div>
           <label class="full-width" for="question">Question text
             <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>
           </label>
@@ -338,7 +351,7 @@
             <input id="question-number" type="number" min="1" max="999" value="1" required>
           </label>
           <label for="total-questions">Total questions
-            <input id="total-questions" type="number" min="1" max="999" value="6" required>
+            <input id="total-questions" type="number" min="1" max="999" value="1" required>
           </label>
         </div>
       </section>
@@ -397,6 +410,9 @@
               <option value="glassmorphism">Glassmorphism</option>
               <option value="aurora">Aurora — custom design</option>
               <option value="minimal-atc">Minimal ATC — custom design</option>
+              <option value="lime">Lime — #89F336</option>
+              <option value="cockpit-green">Cockpit green</option>
+              <option value="orange">Orange</option>
             </select>
           </label>
         </div>
@@ -429,47 +445,7 @@
   </main>
 
   <script>
-    const sampleQuestions = [
-      {
-        question: "Which manufacturer builds the 737 and 787 Dreamliner?",
-        answers: ["Airbus", "Boeing", "Embraer", "Bombardier"],
-        correctIndex: 1,
-        explanation: "The 737 and 787 Dreamliner are aircraft built by the American manufacturer Boeing."
-      },
-      {
-        question: "Which aircraft is known as the Superjumbo?",
-        answers: ["Airbus A380", "Boeing 757", "Embraer E195", "Airbus A321"],
-        correctIndex: 0,
-        explanation: "The Airbus A380 is the largest passenger airliner in service."
-      },
-      {
-        question: "What does transponder code 7700 generally indicate?",
-        answers: ["Training flight", "General emergency", "Communication failure", "State aircraft"],
-        correctIndex: 1,
-        explanation: "Code 7700 is used to signal a general emergency."
-      },
-      {
-        question: "Which Brazilian manufacturer builds the E-Jet family?",
-        answers: ["Cessna", "ATR", "Embraer", "Pilatus"],
-        correctIndex: 2,
-        explanation: "Embraer builds the E-Jet and E-Jet E2 families."
-      },
-      {
-        question: "What is the main purpose of flaps on approach?",
-        answers: ["Increase lift and drag", "Reduce weight", "Increase cabin pressurization", "Brake the wheels in flight"],
-        correctIndex: 0,
-        explanation: "Flaps help generate lift and drag at low speeds."
-      },
-      {
-        question: "Which of these aircraft uses turboprop engines?",
-        answers: ["Boeing 777", "Airbus A350", "ATR 72", "Boeing 787"],
-        correctIndex: 2,
-        explanation: "The ATR 72 is a turboprop aircraft commonly used on regional routes."
-      }
-    ];
-
     const form = document.getElementById("quiz-form");
-    const sampleSelect = document.getElementById("sample-question");
     const durationSlider = document.getElementById("duration");
     const durationOutput = document.getElementById("duration-output");
     const questionFontSizeSlider = document.getElementById("question-font-size");
@@ -496,33 +472,8 @@
     let serverClockReady = false;
     let connected = false;
     let timeoutUpdatePending = false;
-    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc"];
-
-    sampleQuestions.forEach(function (item, index) {
-      const option = document.createElement("option");
-      option.value = String(index);
-      option.textContent = item.question;
-      sampleSelect.appendChild(option);
-    });
-
-    function loadSample(index) {
-      const sample = sampleQuestions[index];
-      if (!sample) return;
-      document.getElementById("question").value = sample.question;
-      sample.answers.forEach(function (answer, answerIndex) {
-        document.getElementById("answer-" + answerIndex).value = answer;
-      });
-      document.getElementById("correct-answer").value = String(sample.correctIndex);
-      document.getElementById("explanation").value = sample.explanation;
-      document.getElementById("question-number").value = String(index + 1);
-      document.getElementById("total-questions").value = String(sampleQuestions.length);
-    }
-
-    sampleSelect.addEventListener("change", function () {
-      if (sampleSelect.value !== "") loadSample(Number(sampleSelect.value));
-    });
-    sampleSelect.value = "0";
-    loadSample(0);
+    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
+    const quizLibrary = createQuizLibrary();
 
     durationSlider.addEventListener("input", function () {
       durationOutput.textContent = durationSlider.value + " seconds";
@@ -643,6 +594,7 @@
       questionFontSizeSlider.disabled = !connected;
       answerFontSizeSlider.disabled = !connected;
       overlayThemeSelect.disabled = !connected;
+      quizLibrary.setConnected(connected);
     }
 
     function setConnectionState(isConnected, detail) {
@@ -787,6 +739,7 @@
           databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         });
         const database = firebase.database();
+        quizLibrary.connect(database.ref("quizQuestionLibrary"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
           const offset = Number(value);

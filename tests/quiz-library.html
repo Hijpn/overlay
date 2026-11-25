@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quiz CSV tests</title>
+<pre id="result">Running...</pre>
+<script src="../quiz-library.js"></script>
+<script>
+  const header = "question,answer1,answer2,answer3,answer4,correct,explanation";
+  function assert(condition, message) {
+    if (!condition) throw new Error(message);
+  }
+  function rejects(csv, expected) {
+    try {
+      parseQuizCsv(csv);
+    } catch (error) {
+      assert(error.message.includes(expected), "Unexpected error: " + error.message);
+      return;
+    }
+    throw new Error("Expected CSV to be rejected: " + expected);
+  }
+  try {
+    const items = parseQuizCsv("\uFEFF" + header + '\r\n"Question, one",a,b,c,d,2,"line 1\nline ""2"""\r\n');
+    assert(items.length === 1 && items[0].question === "Question, one", "Quoted comma or BOM");
+    assert(items[0].correctIndex === 1 && items[0].explanation === 'line 1\nline "2"', "Quoted multiline field");
+    assert(parseQuizCsv("question,answer1,answer2,answer3,answer4,correct\nQ,a,b,c,d,4")[0].explanation === "", "Optional explanation");
+    rejects(header + "\nQ,a,b,c,d,5,why", "row 2");
+    rejects(header + "\n\nQ,a,b,c,d,1,why\nBad,a,b,c,d,0,no", "row 4");
+    rejects(header + '\n"unclosed,a,b,c,d,1,why', "Unclosed");
+    rejects(header + "\nQ,a,b,c,d,1", "wrong number");
+    rejects("question,answer1\nQ,a", "headers");
+    document.getElementById("result").textContent = "All quiz CSV tests passed.";
+  } catch (error) {
+    document.getElementById("result").textContent = "FAILED: " + error.message;
+    throw error;
+  }
+</script>
