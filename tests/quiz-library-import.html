@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quiz import tests</title>
+<pre id="result">Running...</pre>
+<select id="saved-question"><option value="">New question</option></select>
+<button id="new-question"></button><button id="save-question"></button><button id="delete-question"></button>
+<input id="csv-file" type="file"><p id="library-feedback"></p>
+<textarea id="question"></textarea>
+<input id="answer-0"><input id="answer-1"><input id="answer-2"><input id="answer-3">
+<select id="correct-answer"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select>
+<textarea id="explanation"></textarea><input id="question-number"><input id="total-questions">
+<script src="../quiz-library.js"></script>
+<script>
+  async function runTests() {
+    const data = {};
+    let listener;
+    let id = 0;
+    const ref = {
+      on: function (event, callback) {
+        listener = callback;
+        callback({ val: function () { return Object.keys(data).length ? data : null; } });
+      },
+      push: function () { return { key: "key" + (++id) }; },
+      update: function (updates) {
+        Object.assign(data, updates);
+        listener({ val: function () { return data; } });
+        return Promise.resolve();
+      }
+    };
+    const library = createQuizLibrary();
+    library.connect(ref);
+    library.setConnected(true);
+    function upload(csv) {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([csv], "quiz.csv", { type: "text/csv" }));
+      const input = document.getElementById("csv-file");
+      input.files = transfer.files;
+      input.dispatchEvent(new Event("change"));
+    }
+    function assert(condition, message) {
+      if (!condition) throw new Error(message);
+    }
+    const header = "question,answer1,answer2,answer3,answer4,correct\n";
+    upload(header + "First,a,b,c,d,2\nSecond,e,f,g,h,4");
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(document.getElementById("question").value === "First", "First imported question was not loaded");
+    assert(document.getElementById("correct-answer").value === "1", "Correct answer was not loaded");
+    assert(document.getElementById("total-questions").value === "2", "Question count was not loaded");
+    assert(document.getElementById("saved-question").value === "key1", "Imported question was not selected");
+    document.getElementById("saved-question").value = "key2";
+    document.getElementById("saved-question").dispatchEvent(new Event("change"));
+    assert(document.getElementById("question").value === "Second", "Second question was not loaded");
+    window.confirm = function () { return false; };
+    upload(header + "Cancelled,a,b,c,d,1");
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(document.getElementById("question").value === "Second" && Object.keys(data).length === 2, "Cancelled import changed the form or library");
+    window.confirm = function () { return true; };
+    upload(header + "Invalid,a,b,c,d,5");
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(document.getElementById("question").value === "Second", "Invalid import replaced the form");
+    assert(Object.keys(data).length === 2, "Invalid import changed saved questions");
+    document.getElementById("new-question").click();
+    const reopenedLibrary = createQuizLibrary();
+    reopenedLibrary.connect(ref);
+    reopenedLibrary.setConnected(true);
+    assert(document.getElementById("question").value === "First", "Saved question was not loaded on reconnect");
+    document.getElementById("result").textContent = "All quiz import tests passed.";
+  }
+  runTests().catch(function (error) {
+    document.getElementById("result").textContent = "FAILED: " + error.message;
+    throw error;
+  });
+</script>

@@ -262,6 +262,22 @@
     .action-button:hover:not(:disabled) { filter: brightness(1.13); }
     .action-button:disabled { opacity: 0.45; cursor: not-allowed; }
 
+    .csv-upload {
+      display: inline-flex;
+      position: relative;
+      margin-top: 8px;
+    }
+
+    .csv-upload input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      opacity: 0;
+    }
+
+    .csv-upload input:disabled + span { opacity: 0.45; cursor: not-allowed; }
+    .csv-upload input:focus-visible + span,
     .action-button:focus-visible, .open-overlay:focus-visible {
       outline: 2px solid var(--amber);
       outline-offset: 3px;
@@ -339,10 +355,12 @@
               <button class="action-button danger" id="delete-question" type="button" disabled>Delete selected question</button>
             </div>
             <p class="feedback" id="library-feedback" role="status" aria-live="polite">Connect to Firebase to manage saved questions.</p>
-            <label for="csv-file">Import questions from CSV (Google Sheets: File → Download → CSV)
+            <label class="csv-upload">
               <input id="csv-file" type="file" accept=".csv,text/csv" disabled>
+              <span class="action-button">Choose and import CSV</span>
             </label>
-            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional). Import adds questions without replacing existing ones.</p>
+            <p class="feedback">Google Sheets: File → Download → CSV. The first imported question loads into the form; select the others above. Existing saved questions are kept.</p>
+            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional).</p>
           </div>
           <label class="full-width" for="question">Question text
             <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>

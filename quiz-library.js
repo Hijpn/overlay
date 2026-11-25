@@ -90,6 +90,7 @@ function createQuizLibrary() {
   let ready = false;
   let busy = false;
   let questions = {};
+  let firstSnapshot = true;
 
   function message(text, kind) {
     feedback.textContent = text;
@@ -139,6 +140,17 @@ function createQuizLibrary() {
       message("Saved questions are synced with Firebase.");
     }
     ready = true;
+    if (firstSnapshot) {
+      firstSnapshot = false;
+      const firstKey = Object.keys(questions)[0];
+      const formIsEmpty = !document.getElementById("question").value &&
+        [0, 1, 2, 3].every(function (index) { return !document.getElementById("answer-" + index).value; }) &&
+        !document.getElementById("explanation").value;
+      if (firstKey && formIsEmpty) {
+        select.value = firstKey;
+        select.dispatchEvent(new Event("change"));
+      }
+    }
     updateButtons();
   }
 
@@ -205,6 +217,13 @@ function createQuizLibrary() {
   file.addEventListener("change", async function () {
     const selectedFile = file.files[0];
     if (!selectedFile || !connected || !ready || busy) return;
+    const formHasContent = document.getElementById("question").value ||
+      [0, 1, 2, 3].some(function (index) { return document.getElementById("answer-" + index).value; }) ||
+      document.getElementById("explanation").value;
+    if (formHasContent && !window.confirm("Importing will replace the current form with the first imported question. Continue?")) {
+      file.value = "";
+      return;
+    }
     busy = true;
     updateButtons();
     try {
@@ -213,7 +232,14 @@ function createQuizLibrary() {
       const updates = {};
       items.forEach(function (item) { updates[ref.push().key] = item; });
       await ref.update(updates);
-      message(items.length + " question(s) imported.", "success");
+      const firstKey = Object.keys(updates)[0];
+      if (questions[firstKey]) {
+        select.value = firstKey;
+        select.dispatchEvent(new Event("change"));
+        message(items.length + " question(s) imported. The first question is ready to publish.", "success");
+      } else {
+        message("Questions were imported, but the first question could not be loaded. Select a saved question above.", "error");
+      }
     } catch (error) {
       console.error("Could not import questions:", error);
       message("Could not import CSV: " + error.message, "error");
