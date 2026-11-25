@@ -48,7 +48,7 @@
       top: 50%;
       left: 50%;
       width: min(88%, 820px);
-      max-height: 92vh;
+      max-height: 86vh;
       overflow-y: auto;
       padding: clamp(12px, 3.2cqw, 32px);
       border: 1px solid rgba(255, 255, 255, 0.12);
@@ -423,7 +423,6 @@
     }
 
     @media (max-height: 560px) {
-      .quiz-card { max-height: 94vh; }
       .timer { margin: 12px 0 16px; }
       .answers { gap: 10px; }
       .answer { min-height: 44px; }
@@ -482,6 +481,28 @@
     let currentQuiz = null;
     let serverTimeOffset = 0;
 
+    function positionQuizCard() {
+      const viewportHeight = document.documentElement.clientHeight;
+      const cardHeight = quizCard.getBoundingClientRect().height;
+      const safeMargin = Math.min(112, viewportHeight * 0.06);
+      const offsetPercent = parseFloat(
+        window.getComputedStyle(document.documentElement).getPropertyValue("--overlay-offset-y")
+      );
+      const desiredCenter = viewportHeight / 2 + offsetPercent * viewportHeight / 100;
+      const minCenter = safeMargin + cardHeight / 2;
+      const maxCenter = viewportHeight - safeMargin - cardHeight / 2;
+      const center = Math.max(minCenter, Math.min(maxCenter, desiredCenter));
+
+      quizCard.style.top = center - cardHeight / 2 + "px";
+      quizCard.style.transform = "translateX(-50%)";
+    }
+
+    window.addEventListener("resize", positionQuizCard);
+    if (typeof ResizeObserver === "function") {
+      new ResizeObserver(positionQuizCard).observe(quizCard);
+    }
+    positionQuizCard();
+
     function updateTimer(secondsLeft, durationSeconds) {
       const progress = durationSeconds > 0
         ? Math.max(0, Math.min(1, secondsLeft / durationSeconds))
@@ -509,6 +530,7 @@
       feedbackExplanation.textContent = "";
       waitingElement.hidden = false;
       waitingElement.textContent = message;
+      positionQuizCard();
     }
 
     function renderAnswers(quiz, revealAnswer) {
@@ -539,6 +561,7 @@
       timerLabel.textContent = timedOut ? "TIME'S UP" : "ANSWER";
       feedbackLabel.textContent = timedOut ? "Time is up." : "";
       feedbackExplanation.textContent = currentQuiz.explanation;
+      positionQuizCard();
     }
 
     function renderQuizState(state) {
@@ -597,6 +620,7 @@
         timerLabel.textContent = "ANSWER";
         feedbackLabel.textContent = "";
         feedbackExplanation.textContent = currentQuiz.explanation;
+        positionQuizCard();
         return;
       }
 
@@ -635,6 +659,7 @@
 
       document.documentElement.style.setProperty("--question-size", question + "px");
       document.documentElement.style.setProperty("--answer-size", answer + "px");
+      positionQuizCard();
     }
 
     function applyRemoteMobileSettings(snapshot) {
@@ -666,6 +691,7 @@
       document.documentElement.style.setProperty("--overlay-offset-y", offset + "vh");
       document.documentElement.style.setProperty("--explanation-size", explanationSize + "px");
       quizCard.dataset.theme = designTheme;
+      positionQuizCard();
     }
 
     function showFirebaseError(message, error) {
