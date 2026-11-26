@@ -370,7 +370,29 @@
             </span>
             <input id="explanation-size" type="range" min="18" max="48" step="1" value="18" disabled>
           </label>
+          <label for="container-spacing">
+            <span class="range-heading">
+              <span>Spacing adjustment</span>
+              <output class="range-output" id="container-spacing-output" for="container-spacing">Default</output>
+            </span>
+            <input id="container-spacing" type="range" min="-30" max="60" step="1" value="0" aria-valuetext="Default" disabled>
+          </label>
+          <label for="question-radius">
+            <span class="range-heading">
+              <span>Question corner radius</span>
+              <output class="range-output" id="question-radius-output" for="question-radius">Theme default</output>
+            </span>
+            <input id="question-radius" type="range" min="-1" max="100" step="1" value="-1" aria-valuetext="Theme default" disabled>
+          </label>
+          <label for="answer-radius">
+            <span class="range-heading">
+              <span>Answer corner radius</span>
+              <output class="range-output" id="answer-radius-output" for="answer-radius">Theme default</output>
+            </span>
+            <input id="answer-radius" type="range" min="-1" max="100" step="1" value="-1" aria-valuetext="Theme default" disabled>
+          </label>
         </div>
+        <p class="appearance-feedback">Spacing adjusts the gaps around the timer and between answers. The first radius position uses the theme default.</p>
         <p class="appearance-feedback" id="appearance-feedback" role="status" aria-live="polite">Connect to Firebase to adjust the mobile overlay.</p>
       </section>
 
@@ -407,6 +429,12 @@
     const designThemeSelect = document.getElementById("design-theme");
     const explanationSizeSlider = document.getElementById("explanation-size");
     const explanationSizeOutput = document.getElementById("explanation-size-output");
+    const spacingSlider = document.getElementById("container-spacing");
+    const spacingOutput = document.getElementById("container-spacing-output");
+    const questionRadiusSlider = document.getElementById("question-radius");
+    const questionRadiusOutput = document.getElementById("question-radius-output");
+    const answerRadiusSlider = document.getElementById("answer-radius");
+    const answerRadiusOutput = document.getElementById("answer-radius-output");
     const appearanceFeedback = document.getElementById("appearance-feedback");
     const connectionCard = document.getElementById("connection-card");
     const connectionTitle = document.getElementById("connection-title");
@@ -437,6 +465,13 @@
         ? "Centered"
         : Math.abs(offset) + "% " + (offset < 0 ? "up" : "down");
       explanationSizeOutput.textContent = explanationSizeSlider.value + " px";
+      const spacing = Number(spacingSlider.value);
+      spacingOutput.textContent = spacing === 0 ? "Default" : (spacing > 0 ? "+" : "") + spacing + " px";
+      questionRadiusOutput.textContent = questionRadiusSlider.value === "-1" ? "Theme default" : questionRadiusSlider.value + " px";
+      answerRadiusOutput.textContent = answerRadiusSlider.value === "-1" ? "Theme default" : answerRadiusSlider.value + " px";
+      spacingSlider.setAttribute("aria-valuetext", spacingOutput.textContent);
+      questionRadiusSlider.setAttribute("aria-valuetext", questionRadiusOutput.textContent);
+      answerRadiusSlider.setAttribute("aria-valuetext", answerRadiusOutput.textContent);
     }
 
     function setAppearanceFeedback(message, kind) {
@@ -463,8 +498,14 @@
       const designTheme = Object.prototype.hasOwnProperty.call(settings, "designTheme")
         ? settings.designTheme
         : "flight-deck";
+      const spacing = Object.prototype.hasOwnProperty.call(settings, "spacing") ? settings.spacing : 0;
+      const questionRadius = Object.prototype.hasOwnProperty.call(settings, "questionRadius") ? settings.questionRadius : -1;
+      const answerRadius = Object.prototype.hasOwnProperty.call(settings, "answerRadius") ? settings.answerRadius : -1;
       if (!Number.isInteger(offset) || offset < -25 || offset > 25 ||
           !Number.isInteger(explanationSize) || explanationSize < 18 || explanationSize > 48 ||
+          !Number.isInteger(spacing) || spacing < -30 || spacing > 60 ||
+          !Number.isInteger(questionRadius) || questionRadius < -1 || questionRadius > 100 ||
+          !Number.isInteger(answerRadius) || answerRadius < -1 || answerRadius > 100 ||
           !mobileThemes.includes(designTheme)) {
         setAppearanceFeedback("Firebase returned invalid or out-of-range mobile overlay settings.", "error");
         console.error("Out-of-range Firebase mobile overlay settings:", settings);
@@ -474,6 +515,9 @@
       verticalPositionSlider.value = String(offset);
       explanationSizeSlider.value = String(explanationSize);
       designThemeSelect.value = designTheme;
+      spacingSlider.value = String(spacing);
+      questionRadiusSlider.value = String(questionRadius);
+      answerRadiusSlider.value = String(answerRadius);
       updateAppearanceOutputs();
       setAppearanceFeedback("Changes sync live with the mobile overlay.");
     }
@@ -496,11 +540,23 @@
 
     verticalPositionSlider.addEventListener("input", updateAppearanceOutputs);
     explanationSizeSlider.addEventListener("input", updateAppearanceOutputs);
+    spacingSlider.addEventListener("input", updateAppearanceOutputs);
+    questionRadiusSlider.addEventListener("input", updateAppearanceOutputs);
+    answerRadiusSlider.addEventListener("input", updateAppearanceOutputs);
     verticalPositionSlider.addEventListener("change", function () {
       saveMobileSetting("verticalOffset", verticalPositionSlider);
     });
     explanationSizeSlider.addEventListener("change", function () {
       saveMobileSetting("explanationSize", explanationSizeSlider);
+    });
+    spacingSlider.addEventListener("change", function () {
+      saveMobileSetting("spacing", spacingSlider);
+    });
+    questionRadiusSlider.addEventListener("change", function () {
+      saveMobileSetting("questionRadius", questionRadiusSlider);
+    });
+    answerRadiusSlider.addEventListener("change", function () {
+      saveMobileSetting("answerRadius", answerRadiusSlider);
     });
     designThemeSelect.addEventListener("change", function () {
       saveMobileSetting("designTheme", designThemeSelect);
@@ -528,6 +584,9 @@
         : "Reconnecting... Check your internet connection and Firebase permissions.";
       verticalPositionSlider.disabled = !connected;
       explanationSizeSlider.disabled = !connected;
+      spacingSlider.disabled = !connected;
+      questionRadiusSlider.disabled = !connected;
+      answerRadiusSlider.disabled = !connected;
       designThemeSelect.disabled = !connected;
       quizLibrary.setConnected(connected);
       updateButtons();
