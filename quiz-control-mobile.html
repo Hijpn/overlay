@@ -370,6 +370,20 @@
             </span>
             <input id="explanation-size" type="range" min="18" max="48" step="1" value="18" disabled>
           </label>
+          <label for="question-text-size">
+            <span class="range-heading">
+              <span>Question text size</span>
+              <output class="range-output" id="question-text-size-output" for="question-text-size">Shared</output>
+            </span>
+            <input id="question-text-size" type="range" min="0" max="80" step="1" value="0" aria-valuetext="Shared" disabled>
+          </label>
+          <label for="answer-text-size">
+            <span class="range-heading">
+              <span>Answer text size</span>
+              <output class="range-output" id="answer-text-size-output" for="answer-text-size">Shared</output>
+            </span>
+            <input id="answer-text-size" type="range" min="0" max="80" step="1" value="0" aria-valuetext="Shared" disabled>
+          </label>
           <label for="container-spacing">
             <span class="range-heading">
               <span>Spacing adjustment</span>
@@ -380,19 +394,19 @@
           <label for="question-radius">
             <span class="range-heading">
               <span>Question corner radius</span>
-              <output class="range-output" id="question-radius-output" for="question-radius">Theme default</output>
+              <output class="range-output" id="question-radius-output" for="question-radius">0 px</output>
             </span>
-            <input id="question-radius" type="range" min="-1" max="100" step="1" value="-1" aria-valuetext="Theme default" disabled>
+            <input id="question-radius" type="range" min="0" max="100" step="1" value="0" aria-valuetext="0 px" disabled>
           </label>
           <label for="answer-radius">
             <span class="range-heading">
               <span>Answer corner radius</span>
-              <output class="range-output" id="answer-radius-output" for="answer-radius">Theme default</output>
+              <output class="range-output" id="answer-radius-output" for="answer-radius">0 px</output>
             </span>
-            <input id="answer-radius" type="range" min="-1" max="100" step="1" value="-1" aria-valuetext="Theme default" disabled>
+            <input id="answer-radius" type="range" min="0" max="100" step="1" value="0" aria-valuetext="0 px" disabled>
           </label>
         </div>
-        <p class="appearance-feedback">Spacing adjusts the gaps around the timer and between answers. The first radius position uses the theme default.</p>
+        <p class="appearance-feedback">Spacing adjusts the gaps around the timer and between answers. The first text size position follows the shared PC settings.</p>
         <p class="appearance-feedback" id="appearance-feedback" role="status" aria-live="polite">Connect to Firebase to adjust the mobile overlay.</p>
       </section>
 
@@ -429,6 +443,10 @@
     const designThemeSelect = document.getElementById("design-theme");
     const explanationSizeSlider = document.getElementById("explanation-size");
     const explanationSizeOutput = document.getElementById("explanation-size-output");
+    const questionTextSizeSlider = document.getElementById("question-text-size");
+    const questionTextSizeOutput = document.getElementById("question-text-size-output");
+    const answerTextSizeSlider = document.getElementById("answer-text-size");
+    const answerTextSizeOutput = document.getElementById("answer-text-size-output");
     const spacingSlider = document.getElementById("container-spacing");
     const spacingOutput = document.getElementById("container-spacing-output");
     const questionRadiusSlider = document.getElementById("question-radius");
@@ -465,10 +483,14 @@
         ? "Centered"
         : Math.abs(offset) + "% " + (offset < 0 ? "up" : "down");
       explanationSizeOutput.textContent = explanationSizeSlider.value + " px";
+      questionTextSizeOutput.textContent = questionTextSizeSlider.value === "0" ? "Shared" : questionTextSizeSlider.value + " px";
+      answerTextSizeOutput.textContent = answerTextSizeSlider.value === "0" ? "Shared" : answerTextSizeSlider.value + " px";
       const spacing = Number(spacingSlider.value);
       spacingOutput.textContent = spacing === 0 ? "Default" : (spacing > 0 ? "+" : "") + spacing + " px";
-      questionRadiusOutput.textContent = questionRadiusSlider.value === "-1" ? "Theme default" : questionRadiusSlider.value + " px";
-      answerRadiusOutput.textContent = answerRadiusSlider.value === "-1" ? "Theme default" : answerRadiusSlider.value + " px";
+      questionRadiusOutput.textContent = questionRadiusSlider.value + " px";
+      answerRadiusOutput.textContent = answerRadiusSlider.value + " px";
+      questionTextSizeSlider.setAttribute("aria-valuetext", questionTextSizeOutput.textContent);
+      answerTextSizeSlider.setAttribute("aria-valuetext", answerTextSizeOutput.textContent);
       spacingSlider.setAttribute("aria-valuetext", spacingOutput.textContent);
       questionRadiusSlider.setAttribute("aria-valuetext", questionRadiusOutput.textContent);
       answerRadiusSlider.setAttribute("aria-valuetext", answerRadiusOutput.textContent);
@@ -499,13 +521,17 @@
         ? settings.designTheme
         : "flight-deck";
       const spacing = Object.prototype.hasOwnProperty.call(settings, "spacing") ? settings.spacing : 0;
-      const questionRadius = Object.prototype.hasOwnProperty.call(settings, "questionRadius") ? settings.questionRadius : -1;
-      const answerRadius = Object.prototype.hasOwnProperty.call(settings, "answerRadius") ? settings.answerRadius : -1;
+      const questionRadius = Object.prototype.hasOwnProperty.call(settings, "questionRadius") ? settings.questionRadius : 0;
+      const answerRadius = Object.prototype.hasOwnProperty.call(settings, "answerRadius") ? settings.answerRadius : 0;
+      const questionSize = Object.prototype.hasOwnProperty.call(settings, "questionSize") ? settings.questionSize : 0;
+      const answerSize = Object.prototype.hasOwnProperty.call(settings, "answerSize") ? settings.answerSize : 0;
       if (!Number.isInteger(offset) || offset < -25 || offset > 25 ||
           !Number.isInteger(explanationSize) || explanationSize < 18 || explanationSize > 48 ||
           !Number.isInteger(spacing) || spacing < -30 || spacing > 60 ||
           !Number.isInteger(questionRadius) || questionRadius < -1 || questionRadius > 100 ||
           !Number.isInteger(answerRadius) || answerRadius < -1 || answerRadius > 100 ||
+          !Number.isInteger(questionSize) || questionSize < 0 || questionSize > 80 ||
+          !Number.isInteger(answerSize) || answerSize < 0 || answerSize > 80 ||
           !mobileThemes.includes(designTheme)) {
         setAppearanceFeedback("Firebase returned invalid or out-of-range mobile overlay settings.", "error");
         console.error("Out-of-range Firebase mobile overlay settings:", settings);
@@ -516,8 +542,10 @@
       explanationSizeSlider.value = String(explanationSize);
       designThemeSelect.value = designTheme;
       spacingSlider.value = String(spacing);
-      questionRadiusSlider.value = String(questionRadius);
-      answerRadiusSlider.value = String(answerRadius);
+      questionRadiusSlider.value = String(Math.max(0, questionRadius));
+      answerRadiusSlider.value = String(Math.max(0, answerRadius));
+      questionTextSizeSlider.value = String(questionSize);
+      answerTextSizeSlider.value = String(answerSize);
       updateAppearanceOutputs();
       setAppearanceFeedback("Changes sync live with the mobile overlay.");
     }
@@ -540,6 +568,8 @@
 
     verticalPositionSlider.addEventListener("input", updateAppearanceOutputs);
     explanationSizeSlider.addEventListener("input", updateAppearanceOutputs);
+    questionTextSizeSlider.addEventListener("input", updateAppearanceOutputs);
+    answerTextSizeSlider.addEventListener("input", updateAppearanceOutputs);
     spacingSlider.addEventListener("input", updateAppearanceOutputs);
     questionRadiusSlider.addEventListener("input", updateAppearanceOutputs);
     answerRadiusSlider.addEventListener("input", updateAppearanceOutputs);
@@ -548,6 +578,12 @@
     });
     explanationSizeSlider.addEventListener("change", function () {
       saveMobileSetting("explanationSize", explanationSizeSlider);
+    });
+    questionTextSizeSlider.addEventListener("change", function () {
+      saveMobileSetting("questionSize", questionTextSizeSlider);
+    });
+    answerTextSizeSlider.addEventListener("change", function () {
+      saveMobileSetting("answerSize", answerTextSizeSlider);
     });
     spacingSlider.addEventListener("change", function () {
       saveMobileSetting("spacing", spacingSlider);
@@ -584,6 +620,8 @@
         : "Reconnecting... Check your internet connection and Firebase permissions.";
       verticalPositionSlider.disabled = !connected;
       explanationSizeSlider.disabled = !connected;
+      questionTextSizeSlider.disabled = !connected;
+      answerTextSizeSlider.disabled = !connected;
       spacingSlider.disabled = !connected;
       questionRadiusSlider.disabled = !connected;
       answerRadiusSlider.disabled = !connected;
