@@ -18,14 +18,17 @@
     let selectionListener;
     let selectedKey = null;
     let id = 0;
+    let rejectReplacement = false;
     const ref = {
       on: function (event, callback) {
         listener = callback;
         callback({ val: function () { return Object.keys(data).length ? data : null; } });
       },
       push: function () { return { key: "key" + (++id) }; },
-      update: function (updates) {
-        Object.assign(data, updates);
+      set: function (replacement) {
+        if (rejectReplacement) return Promise.reject(new Error("Permission denied"));
+        Object.keys(data).forEach(function (key) { delete data[key]; });
+        Object.assign(data, replacement);
         listener({ val: function () { return data; } });
         return Promise.resolve();
       }
@@ -73,11 +76,28 @@
     await new Promise(function (resolve) { setTimeout(resolve, 50); });
     assert(document.getElementById("question").value === "Second", "Invalid import replaced the form");
     assert(Object.keys(data).length === 2, "Invalid import changed saved questions");
+    data.manual = { question: "Manual", answers: ["a", "b", "c", "d"], correctIndex: 0, explanation: "" };
+    listener({ val: function () { return data; } });
+    rejectReplacement = true;
+    upload(header + "Failed,a,b,c,d,1");
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(Object.keys(data).length === 3 && data.manual && document.getElementById("question").value === "Second", "Failed replacement changed the library or form");
+    assert(document.getElementById("library-feedback").textContent.includes("Permission denied"), "Replacement failure was not reported");
+    rejectReplacement = false;
+    upload("number," + header + "2,New second,e,f,g,h,4\n1,New first,a,b,c,d,2");
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(Object.keys(data).length === 2 && !data.manual && !data.key1 && !data.key2, "Import did not replace old and manual questions");
+    assert(document.getElementById("question").value === "New first", "Numbered import did not load the first question");
+    assert(document.getElementById("question-number").value === "1" && document.getElementById("total-questions").value === "2", "Numbered import has wrong counter");
+    const select = document.getElementById("saved-question");
+    select.value = Object.keys(data)[1];
+    select.dispatchEvent(new Event("change"));
+    assert(document.getElementById("question").value === "New second" && document.getElementById("question-number").value === "2", "Numbered import did not retain the order");
     document.getElementById("new-question").click();
     const reopenedLibrary = createQuizLibrary();
     reopenedLibrary.connect(ref, selectionRef);
     reopenedLibrary.setConnected(true);
-    assert(document.getElementById("question").value === "Second", "Synced question was not loaded on reconnect");
+    assert(document.getElementById("question").value === "New second", "Synced question was not loaded on reconnect");
     document.getElementById("result").textContent = "All quiz import tests passed.";
   }
   runTests().catch(function (error) {

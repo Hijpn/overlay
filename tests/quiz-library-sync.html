@@ -12,6 +12,7 @@
     };
     let selected = "first";
     let rejectSelection = false;
+    let importedId = 0;
     const libraryListeners = [];
     const selectionListeners = [];
     const libraryRef = {
@@ -25,6 +26,13 @@
           libraryListeners.forEach(function (callback) { callback({ val: function () { return data; } }); });
           return Promise.resolve();
         } };
+      },
+      push: function () { return { key: "import" + (++importedId) }; },
+      set: function (replacement) {
+        Object.keys(data).forEach(function (key) { delete data[key]; });
+        Object.assign(data, replacement);
+        libraryListeners.forEach(function (callback) { callback({ val: function () { return data; } }); });
+        return Promise.resolve();
       }
     };
     const selectionRef = {
@@ -95,6 +103,18 @@
     await new Promise(function (resolve) { setTimeout(resolve, 0); });
     assert(question(mobile) === "Updated", "Failed selection changed the other control");
     assert(pc.document.getElementById("library-feedback").textContent.includes("could not sync"), "Selection failure was not reported");
+    rejectSelection = false;
+    mobile.document.getElementById("question").value = "Unsaved mobile edit";
+    const transfer = new pc.DataTransfer();
+    transfer.items.add(new pc.File(["number,question,answer1,answer2,answer3,answer4,correct\n2,Later,e,f,g,h,2\n1,New,a,b,c,d,1"], "quiz.csv", { type: "text/csv" }));
+    const input = pc.document.getElementById("csv-file");
+    input.files = transfer.files;
+    input.dispatchEvent(new pc.Event("change"));
+    await new Promise(function (resolve) { setTimeout(resolve, 50); });
+    assert(question(pc) === "New" && question(mobile) === "Unsaved mobile edit", "Import did not load the first question or preserve the other control's unsaved edit");
+    assert(mobile.document.getElementById("library-feedback").textContent.includes("unsaved"), "Import did not warn about the other control's unsaved edit");
+    mobile.document.getElementById("load-synced-question").click();
+    assert(question(mobile) === "New" && mobile.document.getElementById("total-questions").value === "2", "Imported selection did not sync to the other control");
     document.getElementById("result").textContent = "All quiz selection sync tests passed.";
   }
   runTests().catch(function (error) {

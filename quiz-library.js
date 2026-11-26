@@ -48,11 +48,12 @@ function parseQuizCsv(text) {
   const headers = nonEmptyRows[0].cells.map(function (header) { return header.trim().toLowerCase(); });
   const required = ["question", "answer1", "answer2", "answer3", "answer4", "correct"];
   if (new Set(headers).size !== headers.length || required.some(function (header) { return !headers.includes(header); }) ||
-      headers.some(function (header) { return !required.includes(header) && header !== "explanation"; })) {
-    throw new Error("CSV headers must be question, answer1, answer2, answer3, answer4, correct, and optionally explanation.");
+      headers.some(function (header) { return !required.includes(header) && header !== "explanation" && header !== "number"; })) {
+    throw new Error("CSV headers must be question, answer1, answer2, answer3, answer4, correct, and optionally number and explanation.");
   }
   if (nonEmptyRows.length === 1) throw new Error("The CSV has no questions.");
-  return nonEmptyRows.slice(1).map(function (row) {
+  const numbered = headers.includes("number");
+  const items = nonEmptyRows.slice(1).map(function (row) {
     const cells = row.cells;
     if (cells.length !== headers.length) throw new Error("CSV row " + row.number + " has the wrong number of columns.");
     const get = function (name) {
@@ -67,8 +68,19 @@ function parseQuizCsv(text) {
       explanation: get("explanation")
     };
     if (!isValidQuizQuestion(item)) throw new Error("Invalid question in CSV row " + row.number + ". Check text lengths, answers and correct (1–4).");
-    return item;
+    const number = get("number");
+    if (numbered && (!/^[1-9]\d*$/.test(number) || Number(number) > 999)) {
+      throw new Error("Invalid question number in CSV row " + row.number + ". Use numbers from 1 to 999.");
+    }
+    return { item: item, number: numbered ? Number(number) : 0 };
   });
+  if (numbered) {
+    items.sort(function (a, b) { return a.number - b.number; });
+    if (items.some(function (entry, index) { return entry.number !== index + 1; })) {
+      throw new Error("CSV question numbers must be unique and consecutive starting at 1.");
+    }
+  }
+  return items.map(function (entry) { return entry.item; });
 }
 
 function isValidQuizQuestion(item) {
@@ -315,7 +327,8 @@ function createQuizLibrary() {
     const formHasContent = document.getElementById("question").value ||
       [0, 1, 2, 3].some(function (index) { return document.getElementById("answer-" + index).value; }) ||
       document.getElementById("explanation").value;
-    if (formHasContent && !window.confirm("Importing will replace the current form with the first imported question. Continue?")) {
+    if ((Object.keys(questions).length || formHasContent) &&
+        !window.confirm("Importing will permanently replace ALL saved questions, including manually created questions, and load the first imported question. Continue?")) {
       file.value = "";
       return;
     }
@@ -324,10 +337,10 @@ function createQuizLibrary() {
     try {
       if (selectedFile.size > 2 * 1024 * 1024) throw new Error("CSV must be 2 MB or smaller.");
       const items = parseQuizCsv(await selectedFile.text());
-      const updates = {};
-      items.forEach(function (item) { updates[ref.push().key] = item; });
-      await ref.update(updates);
-      const firstKey = Object.keys(updates)[0];
+      const replacement = {};
+      items.forEach(function (item) { replacement[ref.push().key] = item; });
+      await ref.set(replacement);
+      const firstKey = Object.keys(replacement)[0];
       if (questions[firstKey]) {
         loadQuestion(firstKey);
         if (await publishSelection(firstKey)) {

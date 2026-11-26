@@ -22,6 +22,13 @@
     assert(items.length === 1 && items[0].question === "Question, one", "Quoted comma or BOM");
     assert(items[0].correctIndex === 1 && items[0].explanation === 'line 1\nline "2"', "Quoted multiline field");
     assert(parseQuizCsv("question,answer1,answer2,answer3,answer4,correct\nQ,a,b,c,d,4")[0].explanation === "", "Optional explanation");
+    const numberedHeader = "number,question,answer1,answer2,answer3,answer4,correct";
+    const numbered = parseQuizCsv(numberedHeader + "\n2,Second,e,f,g,h,2\n1,First,a,b,c,d,1");
+    assert(numbered.map(function (item) { return item.question; }).join(",") === "First,Second", "CSV numbers set the question order");
+    rejects(numberedHeader + "\n1,First,a,b,c,d,1\n1,Second,e,f,g,h,2", "unique and consecutive");
+    rejects(numberedHeader + "\n2,First,a,b,c,d,1", "unique and consecutive");
+    rejects(numberedHeader + "\n0,First,a,b,c,d,1", "Invalid question number");
+    rejects(numberedHeader + "\n1000,First,a,b,c,d,1", "Invalid question number");
     rejects(header + "\nQ,a,b,c,d,5,why", "row 2");
     rejects(header + "\n\nQ,a,b,c,d,1,why\nBad,a,b,c,d,0,no", "row 4");
     rejects(header + '\n"unclosed,a,b,c,d,1,why', "Unclosed");

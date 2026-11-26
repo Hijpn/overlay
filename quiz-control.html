@@ -7,7 +7,7 @@
   <title>Sky Stations - PC Quiz Control</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script src="quiz-library.js"></script>
+  <script src="quiz-library.js?v=20261126-1"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -360,8 +360,8 @@
               <input id="csv-file" type="file" accept=".csv,text/csv" disabled>
               <span class="action-button">Choose and import CSV</span>
             </label>
-            <p class="feedback">Saved-question selection syncs with mobile control. Google Sheets: File → Download → CSV. Import loads the first question and keeps existing saved questions.</p>
-            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional).</p>
+            <p class="feedback">Saved-question selection syncs with mobile control. Google Sheets: File → Download → CSV. Import replaces all saved questions, including manual ones, and loads the first imported question.</p>
+            <p class="feedback">Columns: question, answer1, answer2, answer3, answer4, correct (1–4), explanation (optional), number (optional; consecutive from 1, sets the order).</p>
           </div>
           <label class="full-width" for="question">Question text
             <textarea id="question" maxlength="240" required placeholder="Type your question"></textarea>
