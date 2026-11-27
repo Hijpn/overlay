@@ -1,0 +1,173 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quiz airline tests</title>
+<script src="../quiz-airline.js"></script>
+<pre id="result">Running...</pre>
+<select id="airline"></select>
+<input id="name"><button id="add" type="button">Add</button>
+<input id="color" type="color">
+<input id="color-hex">
+<input id="background" type="color">
+<input id="background-hex">
+<p id="feedback"></p>
+<div id="overlay"><span id="label"></span></div>
+<select id="airline-mobile"></select>
+<input id="name-mobile"><button id="add-mobile" type="button">Add</button>
+<input id="color-mobile" type="color">
+<input id="color-hex-mobile">
+<input id="background-mobile" type="color">
+<input id="background-hex-mobile">
+<p id="feedback-mobile"></p>
+<div id="overlay-mobile"><span id="label-mobile"></span></div>
+<script>
+  (async function () {
+    const listeners = [];
+    const data = {};
+    let rejectNext = false;
+    let nextKey = 0;
+    function notify() {
+      listeners.forEach(function (callback) {
+        callback({ exists: function () { return true; }, val: function () { return data; } });
+      });
+    }
+    const ref = {
+      on: function (event, callback) {
+        listeners.push(callback);
+        callback({ exists: function () { return true; }, val: function () { return data; } });
+      },
+      child: function (path) {
+        return { push: function () { return { key: "-custom" + (++nextKey) }; }, set: function (value) {
+          if (rejectNext) {
+            rejectNext = false;
+            return Promise.reject(new Error("denied"));
+          }
+          if (path === "selected") data.selected = value;
+          else {
+            const parts = path.split("/");
+            data[parts[0]] = data[parts[0]] || {};
+            if (value === null) delete data[parts[0]][parts[1]];
+            else data[parts[0]][parts[1]] = value;
+          }
+          notify();
+          return Promise.resolve();
+        } };
+      },
+      update: function (updates) {
+        if (rejectNext) {
+          rejectNext = false;
+          return Promise.reject(new Error("denied"));
+        }
+        data.customAirlines = data.customAirlines || {};
+        Object.keys(updates).forEach(function (path) {
+          if (path === "selected") data.selected = updates[path];
+          else data.customAirlines[path.split("/")[1]] = updates[path];
+        });
+        notify();
+        return Promise.resolve();
+      }
+    };
+    function assert(condition, message) { if (!condition) throw new Error(message); }
+    try {
+      const select = document.getElementById("airline");
+      const color = document.getElementById("color");
+      const colorHex = document.getElementById("color-hex");
+      const background = document.getElementById("background");
+      const backgroundHex = document.getElementById("background-hex");
+      const feedback = document.getElementById("feedback");
+      const overlay = document.getElementById("overlay");
+      const label = document.getElementById("label");
+      const name = document.getElementById("name");
+      const add = document.getElementById("add");
+      const control = QuizAirline.createControl(select, name, add, color, colorHex, background, backgroundHex, feedback);
+      const mobileSelect = document.getElementById("airline-mobile");
+      const mobileColor = document.getElementById("color-mobile");
+      const mobileBackgroundHex = document.getElementById("background-hex-mobile");
+      const mobileControl = QuizAirline.createControl(mobileSelect, document.getElementById("name-mobile"),
+        document.getElementById("add-mobile"), mobileColor,
+        document.getElementById("color-hex-mobile"), document.getElementById("background-mobile"),
+        mobileBackgroundHex, document.getElementById("feedback-mobile"));
+      const mobileOverlay = document.getElementById("overlay-mobile");
+      control.connect(ref);
+      mobileControl.connect(ref);
+      QuizAirline.connectOverlay(ref, overlay, label);
+      QuizAirline.connectOverlay(ref, mobileOverlay, document.getElementById("label-mobile"));
+      assert(select.disabled && color.disabled, "Controls must stay disabled while disconnected");
+      control.setConnected(true);
+      mobileControl.setConnected(true);
+      assert(select.value === "JAL" && label.textContent === "Japan Airlines", "Default airline");
+      assert(color.value === "#38bdf8" && backgroundHex.value === "", "Airlines without saved colors must use the defaults");
+      color.value = "#123456";
+      color.dispatchEvent(new Event("change"));
+      assert(overlay.style.getPropertyValue("--airline-color") === "#123456", "Color must sync to overlay");
+      assert(mobileColor.value === "#123456" && mobileOverlay.style.getPropertyValue("--airline-color") === "#123456", "Color must sync to mobile control and overlay");
+      backgroundHex.value = "abc";
+      backgroundHex.dispatchEvent(new Event("change"));
+      assert(background.value === "#aabbcc" && mobileBackgroundHex.value === "#aabbcc", "Pasted short HEX must sync");
+      assert(overlay.style.getPropertyValue("--airline-background") === "#aabbcc", "Background must sync to overlay");
+      assert(overlay.style.getPropertyValue("--airline-ink") === "#000000", "Light background must use dark text");
+      backgroundHex.value = "#000";
+      backgroundHex.dispatchEvent(new Event("change"));
+      assert(overlay.style.getPropertyValue("--airline-ink") === "#ffffff", "Dark background must use light text");
+      colorHex.value = "invalid";
+      colorHex.dispatchEvent(new Event("change"));
+      assert(feedback.textContent.includes("valid HEX") && data.colors.JAL === "#123456", "Invalid HEX must be reported without saving");
+      colorHex.value = "abcdef";
+      colorHex.dispatchEvent(new Event("change"));
+      assert(color.value === "#abcdef" && mobileColor.value === "#abcdef", "Pasted HEX without hash must sync");
+      color.value = "#123456";
+      color.dispatchEvent(new Event("change"));
+      select.value = "ANA";
+      select.dispatchEvent(new Event("change"));
+      assert(label.textContent === "All Nippon Airways" && color.value !== "#123456" && mobileSelect.value === "ANA", "Switch airline");
+      color.value = "#abcdef";
+      color.dispatchEvent(new Event("change"));
+      select.value = "JAL";
+      select.dispatchEvent(new Event("change"));
+      assert(color.value === "#123456" && backgroundHex.value === "#000000", "Each airline must retain both colors");
+      backgroundHex.value = "";
+      backgroundHex.dispatchEvent(new Event("change"));
+      assert(backgroundHex.value === "" && !overlay.style.getPropertyValue("--airline-background"), "Clearing background must restore the default");
+      select.value = "FDA";
+      select.dispatchEvent(new Event("change"));
+      assert(backgroundHex.value === "" && !overlay.style.getPropertyValue("--airline-background"), "Unknown background must retain the original design");
+      select.value = "JAL";
+      select.dispatchEvent(new Event("change"));
+      name.value = "  Minha Companhia.  ";
+      add.click();
+      await new Promise(function (resolve) { setTimeout(resolve, 0); });
+      assert(label.textContent === "Minha Companhia." && mobileSelect.value === select.value, "Custom airline must sync to both controls and overlays");
+      const customKey = select.value;
+      assert(data.customAirlines[customKey] === "Minha Companhia." && color.value === "#38bdf8" && backgroundHex.value === "", "Custom airline starts without preset colors");
+      colorHex.value = "#abcdef";
+      colorHex.dispatchEvent(new Event("change"));
+      backgroundHex.value = "#fedcba";
+      backgroundHex.dispatchEvent(new Event("change"));
+      select.value = "JAL";
+      select.dispatchEvent(new Event("change"));
+      select.value = customKey;
+      select.dispatchEvent(new Event("change"));
+      assert(colorHex.value === "#abcdef" && backgroundHex.value === "#fedcba", "Custom airline colors must persist after switching");
+      name.value = "  minha companhia. ";
+      add.click();
+      assert(feedback.textContent.includes("already") && Object.keys(data.customAirlines).length === 1, "Duplicate names must be rejected");
+      name.value = "Denied airline";
+      rejectNext = true;
+      add.click();
+      await new Promise(function (resolve) { setTimeout(resolve, 0); });
+      assert(feedback.textContent.includes("denied") && !Object.values(data.customAirlines).includes("Denied airline"), "Add failures must be reported");
+      select.value = "JAL";
+      select.dispatchEvent(new Event("change"));
+      rejectNext = true;
+      color.value = "#000000";
+      color.dispatchEvent(new Event("change"));
+      await Promise.resolve();
+      assert(color.value === "#123456" && feedback.textContent.includes("denied"), "Save failure must restore and report");
+      control.setConnected(false);
+      assert(select.disabled && color.disabled, "Disconnected controls");
+      document.getElementById("result").textContent = "All quiz airline tests passed.";
+    } catch (error) {
+      document.getElementById("result").textContent = "FAILED: " + error.message;
+      throw error;
+    }
+  }());
+</script>

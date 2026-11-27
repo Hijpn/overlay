@@ -42,3 +42,93 @@
 .quiz-card[data-theme="lime"] .question, .quiz-card[data-theme="cockpit-green"] .question, .quiz-card[data-theme="orange"] .question {
   border-color: var(--accent);
 }
+
+.airline-name { display: none; }
+.quiz-ticket[data-theme="airline"] .airline-name,
+.quiz-card[data-theme="airline"] .airline-name {
+  display: block;
+  color: var(--airline-ink, #eaf5f6);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+.quiz-card[data-theme="airline"] .airline-name { margin: 0 0 12px; text-align: center; }
+
+.quiz-ticket[data-theme="airline"], .quiz-card[data-theme="airline"] {
+  --ink: var(--airline-ink, #eaf5f6);
+  --muted: var(--airline-ink, #eaf5f6);
+  --cyan: var(--airline-ink, #eaf5f6);
+  --amber: var(--airline-ink, #eaf5f6);
+  --orange: var(--airline-color, #38bdf8);
+  border: 2px solid var(--airline-color, #38bdf8);
+  background: var(--airline-background, linear-gradient(145deg, #162332, #07131c 72%));
+}
+.quiz-ticket[data-theme="airline"] .boarding-stub { background: transparent; }
+.quiz-ticket[data-theme="airline"] .quiz-status {
+  border-color: var(--airline-color, #38bdf8);
+  background: transparent;
+}
+.quiz-ticket[data-theme="airline"] .answer:not(.correct),
+.quiz-card[data-theme="airline"] .answer:not(.correct),
+.quiz-card[data-theme="airline"] .question {
+  border-color: var(--airline-color, #38bdf8);
+}
+.quiz-ticket[data-theme="airline"] .answer:not(.correct),
+.quiz-card[data-theme="airline"] .answer:not(.correct) {
+  background: var(--airline-background, transparent);
+  color: var(--airline-ink, #eaf5f6);
+}
+.quiz-card[data-theme="airline"] .answer.incorrect { opacity: 0.55; }
+.quiz-ticket[data-theme="airline"] .answer:not(.correct) .answer-key {
+  color: var(--airline-ink, #eaf5f6);
+  border-color: var(--airline-ink, #eaf5f6);
+}
+.quiz-card[data-theme="airline"] .answer:not(.correct) .answer-key {
+  color: inherit;
+  border: 1px solid currentColor;
+  background: transparent;
+}
+.quiz-ticket[data-theme="airline"] .answer.correct,
+.quiz-card[data-theme="airline"] .answer.correct {
+  border-color: #4ccd2c;
+  background: #4ccd2c;
+  color: #10220a;
+}
+.quiz-ticket[data-theme="airline"] .answer.correct .answer-key {
+  border-color: #10220a;
+  color: #10220a;
+}
+.quiz-card[data-theme="airline"] .answer.correct .answer-key {
+  background: rgba(255, 255, 255, 0.35);
+}
+.quiz-ticket[data-theme="airline"] .timer-fill,
+.quiz-card[data-theme="airline"] .timer-fill { background: var(--airline-color, #38bdf8); }
+.quiz-card[data-theme="airline"] .timer-track {
+  background: linear-gradient(var(--airline-background, #101b2a), var(--airline-background, #101b2a)) padding-box,
+    linear-gradient(var(--airline-color, #38bdf8), var(--airline-color, #38bdf8)) border-box;
+}
+.quiz-card[data-theme="airline"] .timer-label { text-shadow: 0 1px 4px #000, 0 1px 8px #000; }
+.quiz-card[data-theme="airline"] .timer-track[data-revealed="true"] .timer-label {
+  color: var(--airline-ink, #eaf5f6);
+  text-shadow: none;
+}
+
+.quiz-ticket[data-theme="sky-stations"], .quiz-card[data-theme="sky-stations"] {
+  --cyan: #38bdf8;
+  --amber: #f9a53e;
+  --orange: #f9a53e;
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  border-top: 2px solid #38bdf8;
+  border-bottom: 2px solid #f9a53e;
+  border-radius: 12px;
+  background: rgba(6, 21, 45, 0.85);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+}
+.quiz-ticket[data-theme="sky-stations"] .answer:not(.correct):not(.incorrect),
+.quiz-card[data-theme="sky-stations"] .answer:not(.correct):not(.incorrect) {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(13, 27, 42, 0.85);
+}
+.quiz-card[data-theme="sky-stations"] .question { border-color: #38bdf8; }
+.quiz-card[data-theme="sky-stations"] .timer-fill { background: linear-gradient(90deg, #38bdf8, #f9a53e); }

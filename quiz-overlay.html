@@ -7,7 +7,8 @@
   <title>Sky Stations - Quiz Overlay</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <link rel="stylesheet" href="quiz-colors.css?v=20261125-2">
+  <link rel="stylesheet" href="quiz-colors.css?v=20261127-4">
+  <script src="quiz-airline.js?v=20261127-3"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -714,7 +715,7 @@
       <section class="ticket-main" aria-live="polite">
         <header class="quiz-header">
           <div class="brand"><span class="signal" aria-hidden="true"></span>Sky Stations</div>
-          <span class="quiz-kind">Aviation quiz / boarding pass</span>
+          <span class="quiz-kind">Boarding pass <span class="airline-name" id="airline-name"></span></span>
         </header>
 
         <div class="question-area">
@@ -729,7 +730,7 @@
       </section>
 
       <aside class="boarding-stub" aria-label="Quiz timer and status">
-        <span class="stub-label">Live quiz</span>
+        <span class="stub-label">Aviation quiz</span>
         <span class="round-label" id="round-label">WAITING</span>
         <div class="timer-display">
           <span class="timer-value" id="timer-value">--</span>
@@ -753,7 +754,7 @@
     const timerValue = document.getElementById("timer-value");
     const timerTrack = document.getElementById("timer-track");
     const quizStatus = document.getElementById("quiz-status");
-    const overlayThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
+    const overlayThemes = QuizAirline.themes;
 
     let timerId = 0;
     let currentQuiz = null;
@@ -930,6 +931,7 @@
           databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         });
         const database = firebase.database();
+        QuizAirline.connectOverlay(database.ref("quizAirlineSettings"), quizTicket, document.getElementById("airline-name"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
           const offset = Number(value);

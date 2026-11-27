@@ -7,7 +7,8 @@
   <title>Sky Stations - Mobile Quiz Overlay</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <link rel="stylesheet" href="quiz-colors.css?v=20261125-2">
+  <link rel="stylesheet" href="quiz-colors.css?v=20261127-4">
+  <script src="quiz-airline.js?v=20261127-3"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -451,6 +452,7 @@
 <body>
   <main class="overlay" aria-label="Vertical live quiz overlay">
     <article class="quiz-card" id="quiz-card" data-theme="flight-deck" aria-live="polite">
+      <span class="airline-name" id="airline-name"></span>
       <h1 class="question" id="question" hidden></h1>
       <div class="timer" id="timer" hidden>
         <span class="round-label" id="round-label">QUESTION 1 / 6</span>
@@ -490,7 +492,7 @@
     const timerLabel = document.getElementById("timer-label");
     const timerTrack = document.getElementById("timer-track");
     const defaultTextSizes = { question: 40, answer: 44 };
-    const mobileThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
+    const mobileThemes = QuizAirline.themes;
 
     let timerId = 0;
     let currentQuiz = null;
@@ -539,6 +541,7 @@
       currentQuiz = null;
       questionElement.hidden = true;
       timerElement.hidden = true;
+      timerTrack.dataset.revealed = "false";
       answersElement.replaceChildren();
       feedbackElement.hidden = true;
       feedbackLabel.textContent = "";
@@ -573,6 +576,7 @@
       clearTimer();
       renderAnswers(currentQuiz, true);
       feedbackElement.hidden = false;
+      timerTrack.dataset.revealed = "true";
       timerLabel.textContent = timedOut ? "TIME'S UP" : "ANSWER";
       feedbackLabel.textContent = timedOut ? "Time is up." : "";
       feedbackExplanation.textContent = currentQuiz.explanation;
@@ -618,6 +622,7 @@
       questionElement.hidden = false;
       waitingElement.hidden = true;
       timerElement.hidden = false;
+      timerTrack.dataset.revealed = state.status === "revealed" ? "true" : "false";
 
       const questionNumber = Number(state.questionNumber);
       const totalQuestions = Number(state.totalQuestions);
@@ -738,6 +743,7 @@
           databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
         });
         const database = firebase.database();
+        QuizAirline.connectOverlay(database.ref("quizAirlineSettings"), quizCard, document.getElementById("airline-name"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
           const offset = Number(value);

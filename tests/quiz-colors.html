@@ -15,14 +15,59 @@
   <div class="answer"></div>
   <div class="answer correct"></div>
 </div>
+<div class="quiz-card" data-theme="airline" style="--airline-color: #123456; --airline-background: #abcdef; --airline-ink: #111111">
+  <div class="question"></div>
+  <div class="answer"><span class="answer-key">1</span></div>
+  <div class="answer incorrect"></div>
+  <div class="answer correct"><span class="answer-key">2</span></div>
+  <div class="timer-track" data-revealed="true"><div class="timer-fill"></div><span class="timer-label">ANSWER</span></div>
+</div>
+<div class="quiz-ticket" data-theme="airline" style="--airline-color: #123456; --airline-background: #abcdef; --airline-ink: #111111">
+  <div class="answer"><span class="answer-key">1</span></div>
+  <div class="answer dimmed"></div>
+  <div class="answer correct"><span class="answer-key">2</span></div>
+</div>
+<div class="quiz-card" data-theme="airline"><div class="answer"></div></div>
+<div class="quiz-ticket" data-theme="sky-stations"></div>
 <script>
   try {
     const lime = "rgb(133, 235, 52)";
-    document.querySelectorAll(".quiz-card, .quiz-ticket, .question, .answer").forEach(function (element) {
+    document.querySelectorAll('[data-theme="lime"], [data-theme="lime"] .question, [data-theme="lime"] .answer').forEach(function (element) {
       if (getComputedStyle(element).borderTopColor !== lime) {
         throw new Error("Lime border not applied to " + element.className);
       }
     });
+    const airline = document.querySelector('[data-theme="airline"]');
+    if (getComputedStyle(airline.querySelector(".question")).borderTopColor !== "rgb(18, 52, 86)" ||
+        getComputedStyle(airline.querySelector(".timer-fill")).backgroundColor !== "rgb(18, 52, 86)" ||
+        getComputedStyle(airline).backgroundColor !== "rgb(171, 205, 239)") {
+      throw new Error("Airline colors not applied to question, timer, and background");
+    }
+    if (!getComputedStyle(airline.querySelector(".timer-track")).backgroundImage.includes("rgb(171, 205, 239)") ||
+        getComputedStyle(airline.querySelector(".timer-label")).color !== "rgb(17, 17, 17)") {
+      throw new Error("Revealed mobile timer must use the chosen background and readable text");
+    }
+    document.querySelectorAll('[data-theme="airline"]').forEach(function (element) {
+      const answer = element.querySelector(".answer");
+      const expected = element.style.getPropertyValue("--airline-background") ? "rgb(171, 205, 239)" : "rgba(0, 0, 0, 0)";
+      if (getComputedStyle(answer).backgroundColor !== expected) {
+        throw new Error("Airline answer must use the chosen background or be transparent");
+      }
+      const incorrect = element.querySelector(".answer.incorrect, .answer.dimmed");
+      if (incorrect && getComputedStyle(incorrect).backgroundColor !== expected) {
+        throw new Error("Unselected answers must retain the chosen background on reveal");
+      }
+      const correct = element.querySelector(".answer.correct");
+      if (correct && (getComputedStyle(correct).backgroundColor !== "rgb(76, 205, 44)" ||
+          getComputedStyle(correct).borderTopColor !== "rgb(76, 205, 44)" ||
+          getComputedStyle(correct.querySelector(".answer-key")).color !== "rgb(16, 34, 10)")) {
+        throw new Error("Revealed answer must be green with readable text");
+      }
+    });
+    const sky = getComputedStyle(document.querySelector('[data-theme="sky-stations"]'));
+    if (sky.borderTopColor !== "rgb(56, 189, 248)" || sky.borderBottomColor !== "rgb(249, 165, 62)") {
+      throw new Error("Sky Stations border colors not applied");
+    }
     document.getElementById("result").textContent = "All quiz color tests passed.";
   } catch (error) {
     document.getElementById("result").textContent = "FAILED: " + error.message;

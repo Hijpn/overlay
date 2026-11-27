@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Quiz authentication tests</title>
+<pre id="result">Running...</pre>
+<button id="quiz-sign-in" type="button">Sign in</button>
+<button id="quiz-sign-out" type="button" hidden>Sign out</button>
+<p id="quiz-auth-message"></p>
+<form id="quiz-form" hidden></form>
+<script>
+  let authObserver;
+  let rejectAccess = false;
+  let signInCalls = 0;
+  let startCalls = 0;
+  const fakeDatabase = {
+    ref: function (path) {
+      if (path !== "quizControlAccess") throw new Error("Wrong access path");
+      return { once: function () {
+        return rejectAccess ? Promise.reject(new Error("Permission denied")) : Promise.resolve();
+      } };
+    }
+  };
+  const fakeAuth = {
+    onAuthStateChanged: function (callback) { authObserver = callback; },
+    signInWithPopup: function () { signInCalls++; return Promise.resolve(); },
+    signOut: function () { return Promise.resolve(); }
+  };
+  window.firebase = {
+    initializeApp: function () {},
+    database: function () { return fakeDatabase; },
+    auth: Object.assign(function () { return fakeAuth; }, {
+      GoogleAuthProvider: function () { this.setCustomParameters = function () {}; }
+    })
+  };
+</script>
+<script src="../quiz-auth.js"></script>
+<script>
+  (async function () {
+    function assert(value, message) { if (!value) throw new Error(message); }
+    function tick() { return new Promise(function (resolve) { setTimeout(resolve, 0); }); }
+    try {
+      const form = document.getElementById("quiz-form");
+      const message = document.getElementById("quiz-auth-message");
+      startQuizAuthentication(function () { startCalls++; }, function () {});
+      authObserver(null);
+      assert(form.hidden && !document.getElementById("quiz-sign-in").hidden, "Signed-out controls must be locked");
+      document.getElementById("quiz-sign-in").click();
+      await tick();
+      assert(signInCalls === 1, "Google sign-in button");
+      rejectAccess = true;
+      authObserver({ uid: "other" });
+      await tick();
+      assert(form.hidden && startCalls === 0 && message.textContent.includes("denied"), "Unauthorized users must stay locked");
+      rejectAccess = false;
+      authObserver({ uid: "owner" });
+      await tick();
+      assert(!form.hidden && startCalls === 1 && !document.getElementById("quiz-sign-out").hidden, "Authorized users can use the control");
+      document.getElementById("result").textContent = "All quiz authentication tests passed.";
+    } catch (error) {
+      document.getElementById("result").textContent = "FAILED: " + error.message;
+      throw error;
+    }
+  }());
+</script>

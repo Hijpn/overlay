@@ -7,7 +7,10 @@
   <title>Sky Stations - Mobile Quiz Control</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <script src="quiz-library.js?v=20261126-1"></script>
+  <script src="quiz-airline.js?v=20261127-3"></script>
+  <script src="quiz-auth.js?v=20261127-1"></script>
   <style>
     :root {
       color-scheme: dark;
@@ -278,7 +281,16 @@
       </div>
     </section>
 
-    <form id="quiz-form">
+    <section class="card" aria-label="Quiz access">
+      <h2 class="section-heading">Quiz access</h2>
+      <p class="feedback" id="quiz-auth-message" role="status" aria-live="polite">Checking sign-in...</p>
+      <div class="button-row">
+        <button class="action-button" id="quiz-sign-in" type="button">Sign in with Google</button>
+        <button class="action-button" id="quiz-sign-out" type="button" hidden>Sign out</button>
+      </div>
+    </section>
+
+    <form id="quiz-form" hidden>
       <section class="card">
         <h2 class="section-heading">Question</h2>
         <div class="field-grid">
@@ -354,7 +366,28 @@
               <option value="lime">Lime — #85EB34</option>
               <option value="cockpit-green">Cockpit green</option>
               <option value="orange">Orange</option>
+              <option value="airline">Airline colors</option>
+              <option value="sky-stations">Sky Stations — blue and orange</option>
             </select>
+          </label>
+          <label for="airline-select">Airline for the airline colors design
+            <select id="airline-select" disabled></select>
+          </label>
+          <label for="airline-name-input">Add airline by name
+            <input id="airline-name-input" type="text" maxlength="80" placeholder="Airline name" disabled>
+          </label>
+          <button class="action-button full-width" id="airline-add" type="button" disabled>Add airline</button>
+          <label for="airline-color">Line color
+            <input id="airline-color" type="color" value="#38bdf8" disabled>
+          </label>
+          <label for="airline-color-hex">Line color HEX
+            <input id="airline-color-hex" type="text" maxlength="7" placeholder="#38bdf8" spellcheck="false" disabled>
+          </label>
+          <label for="airline-background">Background color
+            <input id="airline-background" type="color" value="#07131c" disabled>
+          </label>
+          <label for="airline-background-hex">Background color HEX
+            <input id="airline-background-hex" type="text" maxlength="7" placeholder="Default" spellcheck="false" disabled>
           </label>
           <label for="vertical-position">
             <span class="range-heading">
@@ -408,6 +441,8 @@
         </div>
         <p class="appearance-feedback">Spacing adjusts the gaps around the timer and between answers. The first text size position follows the shared PC settings.</p>
         <p class="appearance-feedback" id="appearance-feedback" role="status" aria-live="polite">Connect to Firebase to adjust the mobile overlay.</p>
+        <p class="feedback" id="airline-feedback" role="status" aria-live="polite">Connect to Firebase to choose an airline.</p>
+        <p class="feedback">Colors are saved per airline. Paste a HEX color and press Enter or leave the field to save. Clear the background HEX to restore the default background.</p>
       </section>
 
       <section class="card">
@@ -462,8 +497,18 @@
     const startButton = document.getElementById("start-question");
     const revealButton = document.getElementById("reveal-answer");
     const clearButton = document.getElementById("clear-overlay");
-    const mobileThemes = ["flight-deck", "liquid-glass", "glassmorphism", "aurora", "minimal-atc", "lime", "cockpit-green", "orange"];
+    const mobileThemes = QuizAirline.themes;
     const quizLibrary = createQuizLibrary();
+    const airlineControl = QuizAirline.createControl(
+      document.getElementById("airline-select"),
+      document.getElementById("airline-name-input"),
+      document.getElementById("airline-add"),
+      document.getElementById("airline-color"),
+      document.getElementById("airline-color-hex"),
+      document.getElementById("airline-background"),
+      document.getElementById("airline-background-hex"),
+      document.getElementById("airline-feedback")
+    );
 
     let databaseRef = null;
     let mobileSettingsRef = null;
@@ -626,6 +671,7 @@
       questionRadiusSlider.disabled = !connected;
       answerRadiusSlider.disabled = !connected;
       designThemeSelect.disabled = !connected;
+      airlineControl.setConnected(connected);
       quizLibrary.setConnected(connected);
       updateButtons();
     }
@@ -652,7 +698,7 @@
     }
 
     function revealCurrentAnswer(timedOut) {
-      if (!databaseRef || !currentQuiz || currentQuiz.status !== "active" || timeoutUpdatePending) return;
+      if (!connected || !databaseRef || !currentQuiz || currentQuiz.status !== "active" || timeoutUpdatePending) return;
       timeoutUpdatePending = true;
       databaseRef.update({
         status: "revealed",
@@ -752,14 +798,9 @@
       if (error) console.error(message, error);
     }
 
-    if (typeof firebase === "undefined") {
-      showFirebaseError("Firebase SDK failed to load.");
-    } else {
-      try {
-        firebase.initializeApp({
-          databaseURL: "https://sky-stations-default-rtdb.firebaseio.com/"
-        });
-        const database = firebase.database();
+    try {
+      startQuizAuthentication(function (database) {
+        airlineControl.connect(database.ref("quizAirlineSettings"));
         quizLibrary.connect(database.ref("quizQuestionLibrary"), database.ref("quizSelectedQuestion"));
         database.ref(".info/serverTimeOffset").on("value", function (snapshot) {
           const value = snapshot.val();
@@ -787,9 +828,12 @@
           setAppearanceFeedback("Could not read mobile overlay settings: " + error.message, "error");
           console.error("Firebase mobile settings listener failed:", error);
         });
-      } catch (error) {
-        showFirebaseError("Could not initialize Firebase.", error);
-      }
+      }, function (message) {
+        setConnectionState(false);
+        connectionDetail.textContent = message;
+      });
+    } catch (error) {
+      showFirebaseError("Could not initialize Firebase.", error);
     }
   </script>
 </body>
