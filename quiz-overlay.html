@@ -75,20 +75,18 @@
     .ticket-main {
       display: grid;
       min-width: 0;
-      grid-template-rows: auto minmax(min-content, 1fr) auto;
+      grid-template-rows: auto minmax(min-content, 1fr);
       gap: 12px;
       padding: 22px 28px 18px;
     }
 
     .quiz-header,
-    .brand,
-    .ticket-footer {
+    .brand {
       display: flex;
       align-items: center;
     }
 
-    .quiz-header,
-    .ticket-footer {
+    .quiz-header {
       justify-content: space-between;
       gap: 16px;
     }
@@ -220,19 +218,6 @@
       font-size: var(--explanation-size);
       line-height: 1.4;
       overflow-wrap: anywhere;
-    }
-
-    .ticket-footer {
-      padding-top: 12px;
-      border-top: 1px solid rgba(126, 207, 213, 0.2);
-    }
-
-    .footer-label {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
     }
 
     .boarding-stub {
@@ -372,10 +357,6 @@
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(12px);
-    }
-
-    .quiz-ticket[data-theme="liquid-glass"] .ticket-footer {
-      border-color: rgba(255, 255, 255, 0.22);
     }
 
     .quiz-ticket[data-theme="glassmorphism"] {
@@ -612,10 +593,6 @@
         flex-basis: max(28px, calc(var(--answer-number-size) + 14px));
       }
 
-      .ticket-footer {
-        display: none;
-      }
-
       .boarding-stub {
         grid-template-columns: 1fr auto;
         grid-template-rows: auto minmax(92px, 1fr) auto;
@@ -678,10 +655,6 @@
         flex-basis: max(24px, calc(var(--answer-number-size) + 14px));
       }
 
-      .ticket-footer {
-        display: none;
-      }
-
       .boarding-stub {
         grid-template-rows: auto minmax(64px, 1fr) auto;
         gap: 5px 8px;
@@ -723,10 +696,6 @@
           <div class="answers" id="answers" role="list" aria-label="Answer options"></div>
           <p class="feedback" id="feedback">Open Quiz Control and publish a question to begin.</p>
         </div>
-
-        <footer class="ticket-footer">
-          <span class="footer-label">Choose an answer before time runs out</span>
-        </footer>
       </section>
 
       <aside class="boarding-stub" aria-label="Quiz timer and status">
@@ -906,7 +875,7 @@
       }
 
       feedbackElement.textContent = "Choose an answer before the timer ends.";
-      quizStatus.textContent = "QUESTION LIVE";
+      quizStatus.textContent = "TIMER";
 
       function tick() {
         const secondsLeft = Math.max(0, (endsAt - (Date.now() + serverTimeOffset)) / 1000);
